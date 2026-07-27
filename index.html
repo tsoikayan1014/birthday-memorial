@@ -93,71 +93,75 @@ body {
   text-align: center;
 }
 
-/* ============ Flip Countdown ============ */
-.countdown-container {
+/* ============ Days-Alive Flip Counter ============ */
+.days-alive-container {
   display: flex;
-  gap: clamp(0.6rem, 2vw, 1.5rem);
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
   margin-bottom: 2rem;
   animation: fadeInUp 1.5s ease-out 0.3s both;
 }
 
-.flip-unit {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
+.days-alive-label {
+  font-family: var(--font-cursive);
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  color: rgba(255,255,255,0.75);
+  text-align: center;
+  animation: fadeInDown 1.5s ease-out 0.2s both;
 }
 
-.flip-card {
+.days-alive-label .name-highlight {
+  color: var(--text-accent);
+  text-shadow: 0 0 20px rgba(255,107,157,0.5);
+  font-size: 1.1em;
+}
+
+.days-flip-card {
   position: relative;
-  width: clamp(55px, 12vw, 90px);
-  height: clamp(70px, 15vw, 110px);
-  perspective: 400px;
+  width: clamp(180px, 40vw, 320px);
+  height: clamp(90px, 18vw, 150px);
+  perspective: 600px;
 }
 
-.flip-card-top,
-.flip-card-bottom {
+.days-flip-top,
+.days-flip-bottom {
   position: absolute;
   left: 0; right: 0;
   height: 50%;
   overflow: hidden;
   background: linear-gradient(180deg, rgba(20,20,50,0.95), rgba(30,30,60,0.9));
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
-.flip-card-top {
+.days-flip-top {
   top: 0;
-  border-radius: 8px 8px 0 0;
-  border-bottom: 1px solid rgba(0,0,0,0.3);
-  line-height: 2;
+  border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid rgba(0,0,0,0.4);
 }
 
-.flip-card-bottom {
+.days-flip-bottom {
   bottom: 0;
-  border-radius: 0 0 8px 8px;
-  border-top: 1px solid rgba(0,0,0,0.3);
-  line-height: 0;
+  border-radius: 0 0 12px 12px;
+  border-top: 1px solid rgba(0,0,0,0.4);
 }
 
-.flip-card-top span,
-.flip-card-bottom span {
+.days-flip-top span,
+.days-flip-bottom span {
   display: block;
   text-align: center;
-  font-size: clamp(2rem, 6vw, 3.5rem);
-  font-weight: 700;
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-weight: 800;
   color: #fff;
-  text-shadow: 0 0 15px rgba(255,107,157,0.6);
+  text-shadow: 0 0 20px rgba(255,107,157,0.7), 0 0 40px rgba(255,107,157,0.3);
   font-variant-numeric: tabular-nums;
-  font-family: 'Courier New', monospace;
+  font-family: 'SF Mono', 'Courier New', monospace;
 }
 
-.flip-card-bottom span {
-  margin-top: -1em;
-  line-height: 2;
-}
+.days-flip-top span { line-height: 2; }
+.days-flip-bottom span { margin-top: -1em; line-height: 2; }
 
-/* The flipping leaf */
-.flip-leaf {
+.days-flip-leaf {
   position: absolute;
   left: 0; right: 0;
   top: 0;
@@ -165,76 +169,64 @@ body {
   transform-origin: bottom center;
   transform-style: preserve-3d;
   z-index: 10;
+  transition: transform 0.08s linear;
+}
+
+.days-flip-leaf.flipping {
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.flip-leaf.flipping {
-  transform: rotateX(-180deg);
+/* Fast spin mode - rapid flips on page load */
+.days-flip-leaf.spinning {
+  transition: transform 0.06s cubic-bezier(0.2, 0, 0.8, 1);
 }
 
-.flip-leaf-front,
-.flip-leaf-back {
+.days-flip-front,
+.days-flip-back {
   position: absolute;
   left: 0; right: 0;
   top: 0; bottom: 0;
   overflow: hidden;
   backface-visibility: hidden;
   background: linear-gradient(180deg, rgba(20,20,50,0.98), rgba(25,25,55,0.95));
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 8px 8px 0 0;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px 12px 0 0;
+}
+
+.days-flip-front span,
+.days-flip-back span {
+  display: block;
+  text-align: center;
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255,107,157,0.7), 0 0 40px rgba(255,107,157,0.3);
+  font-variant-numeric: tabular-nums;
+  font-family: 'SF Mono', 'Courier New', monospace;
   line-height: 2;
 }
 
-.flip-leaf-front span,
-.flip-leaf-back span {
-  display: block;
-  text-align: center;
-  font-size: clamp(2rem, 6vw, 3.5rem);
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 0 15px rgba(255,107,157,0.6);
-  font-variant-numeric: tabular-nums;
-  font-family: 'Courier New', monospace;
-}
-
-.flip-leaf-back {
+.days-flip-back {
   transform: rotateX(180deg);
   background: linear-gradient(180deg, rgba(25,25,55,0.95), rgba(30,35,60,0.98));
 }
 
-/* Center line shadow */
-.flip-card::after {
+.days-flip-card::after {
   content: '';
   position: absolute;
-  left: 4px; right: 4px;
+  left: 6px; right: 6px;
   top: 50%;
-  height: 1px;
-  background: rgba(0,0,0,0.4);
+  height: 2px;
+  background: rgba(0,0,0,0.5);
   z-index: 15;
   pointer-events: none;
+  border-radius: 1px;
 }
 
-.flip-label {
-  font-size: clamp(0.65rem, 1.8vw, 0.85rem);
-  color: rgba(255,255,255,0.5);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-family: var(--font-body);
-}
-
-/* Countdown header */
-.countdown-birthday {
+.days-flip-unit-label {
+  font-size: clamp(0.9rem, 2vw, 1.2rem);
+  color: rgba(255,255,255,0.6);
   font-family: var(--font-cursive);
-  font-size: clamp(1rem, 2.5vw, 1.4rem);
-  color: rgba(255,255,255,0.7);
-  margin-bottom: 1.2rem;
-  animation: fadeInDown 1.5s ease-out 0.2s both;
-  text-align: center;
-}
-
-.countdown-birthday .date-highlight {
-  color: var(--text-accent);
-  text-shadow: 0 0 20px rgba(255,107,157,0.4);
 }
 
 #heartContainer {
@@ -242,6 +234,16 @@ body {
   cursor: pointer;
   animation: fadeInUp 1.5s ease-out 0.6s both;
   z-index: 10;
+}
+
+#heartParticleCanvas {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 300px;
+  pointer-events: none;
+  z-index: 9;
 }
 
 #heartSVG {
@@ -831,42 +833,17 @@ body {
 <section id="hero" class="section">
   <h1 class="hero-title">✨ 生日快乐 ✨</h1>
   <p class="hero-subtitle">愿星光带去我所有的思念</p>
-  <p class="countdown-birthday">🎂 2005.06.17 · 今年<span class="date-highlight" id="ageDisplay">21</span>岁 · 下一个生日倒计时</p>
-  <div class="countdown-container" id="countdown">
-    <div class="flip-unit">
-      <div class="flip-card" id="flipDays">
-        <div class="flip-card-top"><span>0</span></div>
-        <div class="flip-leaf"><div class="flip-leaf-front"><span>0</span></div><div class="flip-leaf-back"><span>0</span></div></div>
-        <div class="flip-card-bottom"><span>0</span></div>
-      </div>
-      <span class="flip-label">天</span>
+  <div class="days-alive-container" id="daysAliveContainer">
+    <p class="days-alive-label"><span class="name-highlight">何嘉榆</span> 降临美丽星球已经</p>
+    <div class="days-flip-card" id="daysFlipCard">
+      <div class="days-flip-top"><span>0</span></div>
+      <div class="days-flip-leaf"><div class="days-flip-front"><span>0</span></div><div class="days-flip-back"><span>0</span></div></div>
+      <div class="days-flip-bottom"><span>0</span></div>
     </div>
-    <div class="flip-unit">
-      <div class="flip-card" id="flipHours">
-        <div class="flip-card-top"><span>0</span></div>
-        <div class="flip-leaf"><div class="flip-leaf-front"><span>0</span></div><div class="flip-leaf-back"><span>0</span></div></div>
-        <div class="flip-card-bottom"><span>0</span></div>
-      </div>
-      <span class="flip-label">时</span>
-    </div>
-    <div class="flip-unit">
-      <div class="flip-card" id="flipMins">
-        <div class="flip-card-top"><span>0</span></div>
-        <div class="flip-leaf"><div class="flip-leaf-front"><span>0</span></div><div class="flip-leaf-back"><span>0</span></div></div>
-        <div class="flip-card-bottom"><span>0</span></div>
-      </div>
-      <span class="flip-label">分</span>
-    </div>
-    <div class="flip-unit">
-      <div class="flip-card" id="flipSecs">
-        <div class="flip-card-top"><span>0</span></div>
-        <div class="flip-leaf"><div class="flip-leaf-front"><span>0</span></div><div class="flip-leaf-back"><span>0</span></div></div>
-        <div class="flip-card-bottom"><span>0</span></div>
-      </div>
-      <span class="flip-label">秒</span>
-    </div>
+    <span class="days-flip-unit-label">天</span>
   </div>
   <div id="heartContainer">
+    <canvas id="heartParticleCanvas"></canvas>
     <svg id="heartSVG" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -890,7 +867,7 @@ body {
   <div class="modal-content">
     <h2 class="modal-title">🌸 致我最想念的你</h2>
     <p class="modal-message" id="modalMessage">
-亲爱的朋友：
+亲爱的何嘉榆：
 
 在这个特别的日子里，
 我想让满天繁星告诉你——我有多想你。
@@ -905,7 +882,7 @@ body {
 愿你生日快乐，岁岁平安。
 愿星光守护你，如同我守护着我们的回忆。
 
-—— 永远想念你的我 💕
+—— 永远最爱你的蔡嘉欣 💕
     </p>
     <button class="modal-close" onclick="closeModal()">💫 收下这份心意</button>
   </div>
@@ -1134,108 +1111,116 @@ createParticles(250);
 animateStars();
 
 // ============================================================
-// 2. BIRTHDAY COUNTDOWN FLIP CLOCK
+// 2. DAYS-ALIVE FLIP COUNTER (何嘉榆降临星球)
 // ============================================================
-const BIRTH_MONTH = 6;   // June
-const BIRTH_DAY = 17;
-const BIRTH_YEAR = 2005;
+const BIRTH_DATE = new Date(2005, 5, 17); // June 17, 2005 (month is 0-indexed)
 
-function getNextBirthday() {
+function getDaysAlive() {
   const now = new Date();
-  // Try this year's birthday first
-  let target = new Date(now.getFullYear(), BIRTH_MONTH - 1, BIRTH_DAY, 0, 0, 0, 0);
-  // If already passed, use next year
-  if (target <= now) {
-    target = new Date(now.getFullYear() + 1, BIRTH_MONTH - 1, BIRTH_DAY, 0, 0, 0, 0);
-  }
-  return target;
+  const birth = new Date(BIRTH_DATE);
+  // Reset time parts for accurate day counting
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const birthStart = new Date(birth.getFullYear(), birth.getMonth(), birth.getDate());
+  return Math.floor((todayStart - birthStart) / (1000 * 60 * 60 * 24));
 }
 
-const flipCards = {
-  days: { el: document.getElementById('flipDays'), leaf: null, front: null, back: null, value: -1 },
-  hours: { el: document.getElementById('flipHours'), leaf: null, front: null, back: null, value: -1 },
-  mins: { el: document.getElementById('flipMins'), leaf: null, front: null, back: null, value: -1 },
-  secs: { el: document.getElementById('flipSecs'), leaf: null, front: null, back: null, value: -1 },
+// Flip card elements
+const daysFlipCard = {
+  el: document.getElementById('daysFlipCard'),
+  leaf: document.querySelector('.days-flip-leaf'),
+  front: document.querySelector('.days-flip-front span'),
+  back: document.querySelector('.days-flip-back span'),
+  topSpan: document.querySelector('.days-flip-top span'),
+  bottomSpan: document.querySelector('.days-flip-bottom span'),
+  value: -1,
 };
 
-// Initialize flip card references
-Object.values(flipCards).forEach(card => {
-  card.leaf = card.el.querySelector('.flip-leaf');
-  card.front = card.el.querySelector('.flip-leaf-front span');
-  card.back = card.el.querySelector('.flip-leaf-back span');
-  // Read initial top/bottom values
-  card.topSpan = card.el.querySelector('.flip-card-top span');
-  card.bottomSpan = card.el.querySelector('.flip-card-bottom span');
-});
+function daysFlipTo(newVal, fast) {
+  if (daysFlipCard.value === newVal) return;
+  const oldVal = daysFlipCard.value;
+  daysFlipCard.value = newVal;
 
-function flipCard(card, newVal) {
-  if (card.value === newVal) return;
-  const oldVal = card.value;
-  card.value = newVal;
-
-  const strVal = String(newVal).padStart(2, '0');
-  const strOld = oldVal === -1 ? strVal : String(oldVal).padStart(2, '0');
+  const strVal = String(newVal);
+  const strOld = oldVal === -1 ? strVal : String(oldVal);
 
   if (oldVal === -1) {
-    // First render — no animation
-    card.front.textContent = strVal;
-    card.back.textContent = strVal;
-    card.topSpan.textContent = strVal;
-    card.bottomSpan.textContent = strVal;
+    daysFlipCard.front.textContent = strVal;
+    daysFlipCard.back.textContent = strVal;
+    daysFlipCard.topSpan.textContent = strVal;
+    daysFlipCard.bottomSpan.textContent = strVal;
     return;
   }
 
-  // Set up the flip: back of leaf shows the NEW number
-  card.back.textContent = strVal;
-  // Front of leaf shows the OLD number
-  card.front.textContent = strOld;
-  // Top stays on OLD during flip
-  card.topSpan.textContent = strOld;
-  // Bottom already shows new (updated after flip)
+  daysFlipCard.back.textContent = strVal;
+  daysFlipCard.front.textContent = strOld;
+  daysFlipCard.topSpan.textContent = strOld;
 
-  // Trigger flip
-  card.leaf.classList.add('flipping');
+  // Fast mode uses spinning class (shorter transition)
+  if (fast) {
+    daysFlipCard.leaf.classList.add('spinning');
+  }
+  daysFlipCard.leaf.classList.add('flipping');
 
-  // After half the animation, update top to new
   setTimeout(() => {
-    card.topSpan.textContent = strVal;
-    card.bottomSpan.textContent = strVal;
-  }, 300);
+    daysFlipCard.topSpan.textContent = strVal;
+    daysFlipCard.bottomSpan.textContent = strVal;
+  }, fast ? 30 : 300);
 
-  // After flip completes, reset leaf
   setTimeout(() => {
-    card.leaf.classList.remove('flipping');
-    card.front.textContent = strVal;
-  }, 600);
+    daysFlipCard.leaf.classList.remove('flipping', 'spinning');
+    daysFlipCard.front.textContent = strVal;
+  }, fast ? 60 : 600);
 }
 
-function updateCountdown() {
-  const target = getNextBirthday();
-  const now = new Date();
-  let diff = target - now;
+// Rapid spin-up animation on page load
+function animateDaysAlive() {
+  const target = getDaysAlive();
+  let current = 0;
+  const TOTAL_STEPS = 80;
+  let step = 0;
 
-  if (diff < 0) diff = 0;
+  function easeOutExpo(t) {
+    return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+  }
 
-  const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  const s = Math.floor((diff % (1000 * 60)) / 1000);
+  function nextFlip() {
+    if (step >= TOTAL_STEPS) {
+      // Final exact flip
+      daysFlipTo(target, false);
+      return;
+    }
 
-  flipCard(flipCards.days, d);
-  flipCard(flipCards.hours, h);
-  flipCard(flipCards.mins, m);
-  flipCard(flipCards.secs, s);
+    // Progress from 0 to 1 with easing
+    const progress = easeOutExpo(step / TOTAL_STEPS);
+    const displayVal = Math.floor(progress * target);
+    const nextVal = Math.max(current + 1, displayVal);
 
-  // Calculate her age
-  const birthdayThisYear = new Date(now.getFullYear(), BIRTH_MONTH - 1, BIRTH_DAY);
-  const age = now.getFullYear() - BIRTH_YEAR - (now < birthdayThisYear ? 1 : 0);
-  const ageEl = document.getElementById('ageDisplay');
-  if (ageEl) ageEl.textContent = age;
+    // Speed: starts very fast, slows down dramatically
+    const delay = 20 + (step * step) / 50; // 20ms → ~140ms
+
+    if (nextVal !== current || step >= TOTAL_STEPS - 5) {
+      daysFlipTo(nextVal, step < TOTAL_STEPS - 10);
+      current = nextVal;
+    }
+
+    step++;
+    setTimeout(nextFlip, delay);
+  }
+
+  // Short delay before starting the animation
+  setTimeout(nextFlip, 800);
 }
 
-// Start countdown
-updateCountdown();
-setInterval(updateCountdown, 1000);
+// Start rapid animation on load
+animateDaysAlive();
+
+// Update daily at midnight (check every minute)
+setInterval(() => {
+  const current = getDaysAlive();
+  if (current !== daysFlipCard.value) {
+    daysFlipTo(current, false);
+  }
+}, 60000);
 
 // ============================================================
 // 3. HEART INTERACTION + MUSIC + MODAL
@@ -1434,7 +1419,154 @@ messageModal.addEventListener('click', (e) => {
 });
 
 // ============================================================
-// 3. INDEXEDDB STORAGE
+// HEART INTERACTIVE PARTICLE SYSTEM
+// ============================================================
+const heartParticleCanvas = document.getElementById('heartParticleCanvas');
+const hpCtx = heartParticleCanvas.getContext('2d');
+let heartParticles = [];
+let mouseX = null, mouseY = null;
+const HP_COUNT = 80;
+
+function resizeHeartCanvas() {
+  const rect = heartParticleCanvas.parentElement.getBoundingClientRect();
+  heartParticleCanvas.width = 300;
+  heartParticleCanvas.height = 300;
+  heartParticleCanvas.style.width = '300px';
+  heartParticleCanvas.style.height = '300px';
+}
+
+class HeartParticle {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    // Start from random position around the heart center
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 30 + Math.random() * 80;
+    this.x = 150 + Math.cos(angle) * dist;
+    this.y = 140 + Math.sin(angle) * dist;
+    this.baseX = this.x;
+    this.baseY = this.y;
+    this.size = Math.random() * 2.5 + 1;
+    this.opacity = Math.random() * 0.6 + 0.4;
+    this.twinkle = Math.random() * Math.PI * 2;
+    this.twinkleSpeed = 0.02 + Math.random() * 0.05;
+    this.orbitAngle = angle;
+    this.orbitDist = dist;
+    this.orbitSpeed = (Math.random() - 0.5) * 0.008;
+    this.wanderX = (Math.random() - 0.5) * 1.5;
+    this.wanderY = (Math.random() - 0.5) * 1.5;
+    this.color = ['#ff6b9d','#ffb8d0','#ff9dbc','#ffe0ec','#ff477e'][Math.floor(Math.random() * 5)];
+  }
+  update(mx, my) {
+    this.twinkle += this.twinkleSpeed;
+    this.opacity = 0.35 + Math.sin(this.twinkle) * 0.35;
+
+    // Orbit slowly around heart center
+    this.orbitAngle += this.orbitSpeed;
+
+    // Mouse interaction: particles attracted to cursor
+    if (mx !== null && my !== null) {
+      const dx = mx - this.x;
+      const dy = my - this.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const influenceRadius = 120;
+
+      if (dist < influenceRadius) {
+        const force = (1 - dist / influenceRadius) * 1.8;
+        this.x += dx * force * 0.03;
+        this.y += dy * force * 0.03;
+        this.opacity = Math.min(1, this.opacity + 0.02);
+        this.size = Math.min(4, this.size + 0.02);
+      }
+    }
+
+    // Gently pull back to orbit position
+    const tx = 150 + Math.cos(this.orbitAngle) * this.orbitDist;
+    const ty = 140 + Math.sin(this.orbitAngle) * this.orbitDist;
+    this.x += (tx - this.x) * 0.02 + this.wanderX;
+    this.y += (ty - this.y) * 0.02 + this.wanderY;
+
+    // Slowly drift orbit
+    this.orbitDist += (Math.sin(this.twinkle * 0.3) * 0.3);
+    this.orbitDist = Math.max(20, Math.min(120, this.orbitDist));
+
+    // Reset size and opacity back to normal
+    this.size += (1.5 - this.size) * 0.02;
+  }
+  draw(ctx) {
+    // Glow
+    const glow = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 4);
+    glow.addColorStop(0, this.color);
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.globalAlpha = this.opacity * 0.3;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Core
+    ctx.fillStyle = this.color;
+    ctx.globalAlpha = this.opacity;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// Initialize heart particles
+for (let i = 0; i < HP_COUNT; i++) {
+  heartParticles.push(new HeartParticle());
+}
+
+function animateHeartParticles() {
+  hpCtx.clearRect(0, 0, 300, 300);
+  heartParticles.forEach(p => {
+    p.update(mouseX, mouseY);
+    p.draw(hpCtx);
+  });
+  requestAnimationFrame(animateHeartParticles);
+}
+
+resizeHeartCanvas();
+animateHeartParticles();
+
+// Track mouse near heart
+document.addEventListener('mousemove', (e) => {
+  const container = heartParticleCanvas.parentElement;
+  const rect = container.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const dx = e.clientX - cx;
+  const dy = e.clientY - cy;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+
+  // Only track mouse within range of the heart
+  if (dist < 250) {
+    // Convert to canvas coordinates (canvas is 300x300, centered on heart)
+    mouseX = 150 + dx;
+    mouseY = 140 + dy;
+  } else {
+    mouseX = null;
+    mouseY = null;
+  }
+});
+
+// On heart click, burst all particles outward
+heartContainer.addEventListener('click', () => {
+  heartParticles.forEach(p => {
+    const angle = Math.random() * Math.PI * 2;
+    const force = 60 + Math.random() * 100;
+    p.x += Math.cos(angle) * force;
+    p.y += Math.sin(angle) * force;
+    p.size = 3 + Math.random() * 3;
+    p.opacity = 1;
+  });
+});
+
+// ============================================================
+// 4. INDEXEDDB STORAGE
 // ============================================================
 const DB_NAME = 'BirthdayMemorial';
 const DB_VERSION = 1;
