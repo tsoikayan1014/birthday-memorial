@@ -1,0 +1,1962 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>生日快乐 - 思念如星辰</title>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+/* ============ CSS Variables & Reset ============ */
+:root {
+  --bg-deep: #0a0a1a;
+  --bg-space: #0d0d2b;
+  --star-white: #ffffff;
+  --star-warm: #ffe8d6;
+  --star-blue: #aaccff;
+  --heart-from: #ff6b9d;
+  --heart-to: #c44569;
+  --heart-glow: #ff3b6e;
+  --modal-bg: rgba(10, 10, 30, 0.95);
+  --text-primary: #ffffff;
+  --text-accent: #ffb8d0;
+  --accent: #ff6b9d;
+  --accent-dim: rgba(255, 107, 157, 0.3);
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-border: rgba(255, 255, 255, 0.1);
+  --font-cursive: 'Ma Shan Zheng', cursive;
+  --font-body: 'Noto Serif SC', serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============ Starry Canvas ============ */
+#starCanvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ============ Sections ============ */
+.section {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: start;
+  padding: 2rem;
+}
+
+/* ============ Hero / Heart Section ============ */
+#hero {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-title {
+  font-family: var(--font-cursive);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  color: var(--text-accent);
+  margin-bottom: 1rem;
+  text-shadow: 0 0 30px rgba(255, 107, 157, 0.5);
+  animation: fadeInDown 1.5s ease-out;
+  text-align: center;
+}
+
+.hero-subtitle {
+  font-size: clamp(0.9rem, 2vw, 1.2rem);
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 1rem;
+  animation: fadeInDown 1.5s ease-out 0.3s both;
+  text-align: center;
+}
+
+/* ============ Flip Countdown ============ */
+.countdown-container {
+  display: flex;
+  gap: clamp(0.6rem, 2vw, 1.5rem);
+  margin-bottom: 2rem;
+  animation: fadeInUp 1.5s ease-out 0.3s both;
+}
+
+.flip-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.flip-card {
+  position: relative;
+  width: clamp(55px, 12vw, 90px);
+  height: clamp(70px, 15vw, 110px);
+  perspective: 400px;
+}
+
+.flip-card-top,
+.flip-card-bottom {
+  position: absolute;
+  left: 0; right: 0;
+  height: 50%;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(20,20,50,0.95), rgba(30,30,60,0.9));
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.flip-card-top {
+  top: 0;
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid rgba(0,0,0,0.3);
+  line-height: 2;
+}
+
+.flip-card-bottom {
+  bottom: 0;
+  border-radius: 0 0 8px 8px;
+  border-top: 1px solid rgba(0,0,0,0.3);
+  line-height: 0;
+}
+
+.flip-card-top span,
+.flip-card-bottom span {
+  display: block;
+  text-align: center;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 15px rgba(255,107,157,0.6);
+  font-variant-numeric: tabular-nums;
+  font-family: 'Courier New', monospace;
+}
+
+.flip-card-bottom span {
+  margin-top: -1em;
+  line-height: 2;
+}
+
+/* The flipping leaf */
+.flip-leaf {
+  position: absolute;
+  left: 0; right: 0;
+  top: 0;
+  height: 50%;
+  transform-origin: bottom center;
+  transform-style: preserve-3d;
+  z-index: 10;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flip-leaf.flipping {
+  transform: rotateX(-180deg);
+}
+
+.flip-leaf-front,
+.flip-leaf-back {
+  position: absolute;
+  left: 0; right: 0;
+  top: 0; bottom: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  background: linear-gradient(180deg, rgba(20,20,50,0.98), rgba(25,25,55,0.95));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px 8px 0 0;
+  line-height: 2;
+}
+
+.flip-leaf-front span,
+.flip-leaf-back span {
+  display: block;
+  text-align: center;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 15px rgba(255,107,157,0.6);
+  font-variant-numeric: tabular-nums;
+  font-family: 'Courier New', monospace;
+}
+
+.flip-leaf-back {
+  transform: rotateX(180deg);
+  background: linear-gradient(180deg, rgba(25,25,55,0.95), rgba(30,35,60,0.98));
+}
+
+/* Center line shadow */
+.flip-card::after {
+  content: '';
+  position: absolute;
+  left: 4px; right: 4px;
+  top: 50%;
+  height: 1px;
+  background: rgba(0,0,0,0.4);
+  z-index: 15;
+  pointer-events: none;
+}
+
+.flip-label {
+  font-size: clamp(0.65rem, 1.8vw, 0.85rem);
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-family: var(--font-body);
+}
+
+/* Countdown header */
+.countdown-birthday {
+  font-family: var(--font-cursive);
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 1.2rem;
+  animation: fadeInDown 1.5s ease-out 0.2s both;
+  text-align: center;
+}
+
+.countdown-birthday .date-highlight {
+  color: var(--text-accent);
+  text-shadow: 0 0 20px rgba(255,107,157,0.4);
+}
+
+#heartContainer {
+  position: relative;
+  cursor: pointer;
+  animation: fadeInUp 1.5s ease-out 0.6s both;
+  z-index: 10;
+}
+
+#heartSVG {
+  width: clamp(120px, 25vw, 200px);
+  height: auto;
+  filter: drop-shadow(0 0 30px rgba(255, 107, 157, 0.6));
+  transition: filter 0.3s, transform 0.3s;
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+#heartSVG:hover {
+  filter: drop-shadow(0 0 50px rgba(255, 107, 157, 0.9));
+  transform: scale(1.08);
+}
+
+#heartSVG.clicked {
+  animation: heartBurst 0.6s ease-out forwards;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.08); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.05); }
+  56% { transform: scale(1); }
+}
+
+@keyframes heartBurst {
+  0% { transform: scale(1); filter: drop-shadow(0 0 30px rgba(255,107,157,0.6)); }
+  50% { transform: scale(1.3); filter: drop-shadow(0 0 80px rgba(255,107,157,1)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 40px rgba(255,107,157,0.8)); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.heart-hint {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.4);
+  margin-top: 1.5rem;
+  animation: fadeInUp 1.5s ease-out 0.9s both, hintPulse 2s ease-in-out 2.5s infinite;
+}
+
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Music control */
+.music-control {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--card-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.music-control.visible { display: flex; }
+.music-control:hover { background: var(--accent-dim); border-color: var(--accent); }
+.music-control.playing { background: var(--accent-dim); animation: musicPulse 1s ease-in-out infinite; }
+
+@keyframes musicPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(255,107,157,0.3); }
+  50% { box-shadow: 0 0 25px rgba(255,107,157,0.6); }
+}
+
+/* ============ Message Modal ============ */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal-content {
+  background: var(--modal-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 3rem 2rem;
+  max-width: 600px;
+  width: 90%;
+  text-align: center;
+  transform: translateY(30px) scale(0.95);
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-overlay.active .modal-content {
+  transform: translateY(0) scale(1);
+}
+
+.modal-title {
+  font-family: var(--font-cursive);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  color: var(--text-accent);
+  margin-bottom: 1.5rem;
+}
+
+.modal-message {
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  line-height: 2;
+  color: rgba(255,255,255,0.85);
+  white-space: pre-line;
+}
+
+.modal-close {
+  margin-top: 2rem;
+  padding: 0.7rem 2rem;
+  background: linear-gradient(135deg, var(--heart-from), var(--heart-to));
+  border: none;
+  border-radius: 30px;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: var(--font-body);
+}
+
+.modal-close:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px rgba(255,107,157,0.5);
+}
+
+/* Floating hearts from burst */
+.floating-heart {
+  position: fixed;
+  pointer-events: none;
+  z-index: 150;
+  font-size: 1.5rem;
+  animation: floatUp 3s ease-out forwards;
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(0.3) rotate(var(--rot));
+  }
+}
+
+/* ============ Gallery Section ============ */
+#gallery {
+  padding-top: 2rem;
+}
+
+.section-title {
+  font-family: var(--font-cursive);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  color: var(--text-accent);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.section-desc {
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  max-width: 1000px;
+}
+
+.gallery-item {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.gallery-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(255,107,157,0.2);
+}
+
+.gallery-item img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gallery-item .delete-btn {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gallery-item:hover .delete-btn { opacity: 1; }
+.gallery-item .delete-btn:hover { background: rgba(255,60,60,0.8); }
+
+.add-photo-card {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 2px dashed var(--card-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: rgba(255,255,255,0.5);
+  gap: 0.5rem;
+}
+
+.add-photo-card:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255,107,157,0.05);
+}
+
+.add-photo-card .plus-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+/* Lightbox */
+.lightbox {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.9);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.lightbox.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.lightbox img {
+  max-width: 90vw;
+  max-height: 85vh;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 20px; right: 30px;
+  font-size: 2rem;
+  color: white;
+  cursor: pointer;
+  z-index: 301;
+  background: none;
+  border: none;
+}
+
+/* ============ Voice Section ============ */
+.voice-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.record-btn {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--heart-from), var(--heart-to));
+  border: none;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 25px rgba(255,107,157,0.3);
+}
+
+.record-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 40px rgba(255,107,157,0.5);
+}
+
+.record-btn.recording {
+  animation: recordPulse 1s ease-in-out infinite;
+  background: #ff3b3b;
+  box-shadow: 0 0 35px rgba(255,60,60,0.5);
+}
+
+@keyframes recordPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(255,60,60,0.3); }
+  50% { box-shadow: 0 0 50px rgba(255,60,60,0.7); }
+}
+
+.record-timer {
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-accent);
+}
+
+.recordings-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.recording-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+}
+
+.recording-item .play-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s;
+}
+
+.recording-item .play-btn:hover { background: var(--accent); }
+
+.recording-item .rec-info {
+  flex: 1;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.7);
+}
+
+.recording-item .rec-delete {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px;
+  transition: color 0.3s;
+}
+
+.recording-item .rec-delete:hover { color: #ff3b3b; }
+
+/* Waveform bars */
+.waveform {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 30px;
+}
+
+.waveform .bar {
+  width: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: height 0.1s;
+}
+
+/* ============ Camera Section ============ */
+.camera-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.camera-preview {
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+  border: 2px solid var(--card-border);
+  position: relative;
+}
+
+.camera-preview video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* mirror */
+}
+
+.camera-preview canvas {
+  display: none;
+}
+
+.camera-placeholder {
+  width: 100%; height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.3);
+  font-size: 3rem;
+}
+
+.camera-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.camera-btn {
+  padding: 0.7rem 1.8rem;
+  border-radius: 30px;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.3s;
+}
+
+.camera-btn.start {
+  background: linear-gradient(135deg, var(--heart-from), var(--heart-to));
+  color: white;
+}
+
+.camera-btn.start:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(255,107,157,0.4);
+}
+
+.camera-btn.capture {
+  background: white;
+  color: var(--bg-deep);
+}
+
+.camera-btn.capture:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(255,255,255,0.4);
+}
+
+.camera-btn.stop {
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border: 1px solid var(--card-border);
+}
+
+.camera-flash {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s;
+}
+
+.camera-flash.flash { opacity: 0.8; }
+
+/* Camera overlay particles */
+.camera-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+
+/* ============ Navigation Dots ============ */
+.nav-dots {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nav-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+}
+
+.nav-dot:hover, .nav-dot.active {
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(255,107,157,0.5);
+  transform: scale(1.3);
+}
+
+/* ============ Footer ============ */
+.site-footer {
+  text-align: center;
+  padding: 2rem;
+  color: rgba(255,255,255,0.3);
+  font-size: 0.8rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============ Scrollbar ============ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+/* ============ Responsive ============ */
+@media (max-width: 768px) {
+  .section { padding: 1.5rem 1rem; }
+  .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.7rem; }
+  .nav-dots { right: 8px; gap: 8px; }
+  .nav-dot { width: 8px; height: 8px; }
+  .modal-content { padding: 2rem 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Starry Sky Canvas -->
+<canvas id="starCanvas"></canvas>
+
+<!-- Music Toggle -->
+<button id="musicToggle" class="music-control" title="暂停/播放音乐">🎵</button>
+
+<!-- ============ Hero Section ============ -->
+<section id="hero" class="section">
+  <h1 class="hero-title">✨ 生日快乐 ✨</h1>
+  <p class="hero-subtitle">愿星光带去我所有的思念</p>
+  <p class="countdown-birthday">🎂 2005.06.17 · 今年<span class="date-highlight" id="ageDisplay">21</span>岁 · 下一个生日倒计时</p>
+  <div class="countdown-container" id="countdown">
+    <div class="flip-unit">
+      <div class="flip-card" id="flipDays">
+        <div class="flip-card-top"><span>0</span></div>
+        <div class="flip-leaf"><div class="flip-leaf-front"><span>0</span></div><div class="flip-leaf-back"><span>0</span></div></div>
+        <div class="flip-card-bottom"><span>0</span></div>
+      </div>
+      <span class="flip-label">天</span>
+    </div>
+    <div class="flip-unit">
+      <div class="flip-card" id="flipHours">
+        <div class="flip-card-top"><span>0</span></div>
+        <div class="flip-leaf"><div class="flip-leaf-front"><span>0</span></div><div class="flip-leaf-back"><span>0</span></div></div>
+        <div class="flip-card-bottom"><span>0</span></div>
+      </div>
+      <span class="flip-label">时</span>
+    </div>
+    <div class="flip-unit">
+      <div class="flip-card" id="flipMins">
+        <div class="flip-card-top"><span>0</span></div>
+        <div class="flip-leaf"><div class="flip-leaf-front"><span>0</span></div><div class="flip-leaf-back"><span>0</span></div></div>
+        <div class="flip-card-bottom"><span>0</span></div>
+      </div>
+      <span class="flip-label">分</span>
+    </div>
+    <div class="flip-unit">
+      <div class="flip-card" id="flipSecs">
+        <div class="flip-card-top"><span>0</span></div>
+        <div class="flip-leaf"><div class="flip-leaf-front"><span>0</span></div><div class="flip-leaf-back"><span>0</span></div></div>
+        <div class="flip-card-bottom"><span>0</span></div>
+      </div>
+      <span class="flip-label">秒</span>
+    </div>
+  </div>
+  <div id="heartContainer">
+    <svg id="heartSVG" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#ff6b9d;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#c44569;stop-opacity:1" />
+        </linearGradient>
+        <filter id="heartGlow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <path d="M50 88 C25 70, 5 55, 5 35 C5 20, 18 8, 30 8 C40 8, 47 15, 50 22 C53 15, 60 8, 70 8 C82 8, 95 20, 95 35 C95 55, 75 70, 50 88Z"
+            fill="url(#heartGrad)" filter="url(#heartGlow)"/>
+    </svg>
+  </div>
+  <p class="heart-hint">💛 点击爱心，听听我想对你说的话</p>
+</section>
+
+<!-- ============ Message Modal ============ -->
+<div id="messageModal" class="modal-overlay">
+  <div class="modal-content">
+    <h2 class="modal-title">🌸 致我最想念的你</h2>
+    <p class="modal-message" id="modalMessage">
+亲爱的朋友：
+
+在这个特别的日子里，
+我想让满天繁星告诉你——我有多想你。
+
+虽然我们此刻相隔千里，
+但每当抬头看到同一片星空，
+我就觉得你从未远离。
+
+那些一起笑过、哭过、疯过的日子，
+是我生命里最珍贵的宝藏。
+
+愿你生日快乐，岁岁平安。
+愿星光守护你，如同我守护着我们的回忆。
+
+—— 永远想念你的我 💕
+    </p>
+    <button class="modal-close" onclick="closeModal()">💫 收下这份心意</button>
+  </div>
+</div>
+
+<!-- ============ Gallery Section ============ -->
+<section id="gallery" class="section">
+  <h2 class="section-title">📸 我们的回忆</h2>
+  <p class="section-desc">每一张照片，都是时光的碎片</p>
+  <div class="gallery-grid" id="galleryGrid">
+    <div class="add-photo-card" id="addPhotoBtn" title="添加照片">
+      <span class="plus-icon">+</span>
+      <span>添加照片</span>
+    </div>
+  </div>
+  <input type="file" id="photoInput" accept="image/*" multiple style="display:none">
+</section>
+
+<!-- Lightbox -->
+<div id="lightbox" class="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close">&times;</button>
+  <img id="lightboxImg" src="" alt="照片预览">
+</div>
+
+<!-- ============ Voice Section ============ -->
+<section id="voice" class="section">
+  <h2 class="section-title">🎙️ 语音留言</h2>
+  <p class="section-desc">录下你想说的话，让声音跨越距离</p>
+  <div class="voice-container">
+    <button id="recordBtn" class="record-btn" title="点击开始录音">🎤</button>
+    <div id="recordTimer" class="record-timer">00:00</div>
+    <div class="recordings-list" id="recordingsList"></div>
+  </div>
+</section>
+
+<!-- ============ Camera Section ============ -->
+<section id="camera" class="section">
+  <h2 class="section-title">📷 此刻的你</h2>
+  <p class="section-desc">打开摄像头，拍一张照片加入回忆</p>
+  <div class="camera-container">
+    <div class="camera-preview" id="cameraPreview">
+      <video id="cameraVideo" autoplay playsinline muted></video>
+      <canvas id="cameraCanvas"></canvas>
+      <div class="camera-flash" id="cameraFlash"></div>
+      <div class="camera-placeholder" id="cameraPlaceholder">📷</div>
+    </div>
+    <div class="camera-actions">
+      <button id="cameraStartBtn" class="camera-btn start">打开摄像头</button>
+      <button id="cameraCaptureBtn" class="camera-btn capture" style="display:none">📸 拍照</button>
+      <button id="cameraStopBtn" class="camera-btn stop" style="display:none">关闭摄像头</button>
+    </div>
+  </div>
+</section>
+
+<!-- Navigation Dots -->
+<nav class="nav-dots" id="navDots">
+  <button class="nav-dot active" data-target="hero" title="首页"></button>
+  <button class="nav-dot" data-target="gallery" title="照片墙"></button>
+  <button class="nav-dot" data-target="voice" title="语音留言"></button>
+  <button class="nav-dot" data-target="camera" title="摄像头"></button>
+</nav>
+
+<footer class="site-footer">✨ 思念如星辰，纵隔山海，依旧闪耀 ✨</footer>
+
+<!-- Hidden audio element -->
+<audio id="bgMusic" loop preload="auto">
+  <source src="assets/song.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+// ============================================================
+// 1. PARTICLE STARRY SKY BACKGROUND
+// ============================================================
+const canvas = document.getElementById('starCanvas');
+const ctx = canvas.getContext('2d');
+
+let particles = [];
+let shootingStars = [];
+let W, H;
+
+function resizeCanvas() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+
+function createParticles(count) {
+  particles = [];
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      radius: Math.random() * 2.2 + 0.5,
+      baseOpacity: Math.random() * 0.7 + 0.3,
+      opacity: 0,
+      twinkleSpeed: Math.random() * 0.02 + 0.005,
+      twinklePhase: Math.random() * Math.PI * 2,
+      driftX: (Math.random() - 0.5) * 0.3,
+      driftY: (Math.random() - 0.5) * 0.2,
+      color: [ '#ffffff', '#ffe8d6', '#aaccff', '#ffd4e8', '#d4e4ff' ][Math.floor(Math.random() * 5)]
+    });
+  }
+}
+
+function spawnShootingStar() {
+  if (Math.random() > 0.02) return;
+  const fromLeft = Math.random() > 0.5;
+  shootingStars.push({
+    x: fromLeft ? Math.random() * W * 0.5 : W * 0.5 + Math.random() * W * 0.5,
+    y: Math.random() * H * 0.5,
+    vx: fromLeft ? 6 + Math.random() * 8 : -(6 + Math.random() * 8),
+    vy: 2 + Math.random() * 3,
+    life: 1,
+    decay: 0.015 + Math.random() * 0.03,
+    trail: []
+  });
+}
+
+function drawNebula() {
+  // Create subtle nebula effects with large radial gradients
+  const nebulas = [
+    { x: W * 0.15, y: H * 0.2, r: W * 0.4, color: 'rgba(80, 30, 120, 0.04)' },
+    { x: W * 0.8, y: H * 0.6, r: W * 0.35, color: 'rgba(30, 60, 120, 0.04)' },
+    { x: W * 0.5, y: H * 0.8, r: W * 0.45, color: 'rgba(100, 30, 80, 0.03)' },
+  ];
+  nebulas.forEach(n => {
+    const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+    grad.addColorStop(0, n.color);
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  });
+}
+
+function animateStars() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Deep space background
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, '#0a0a1a');
+  bgGrad.addColorStop(0.5, '#0d0d2b');
+  bgGrad.addColorStop(1, '#0a0a1e');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Nebula
+  drawNebula();
+
+  // Draw particles (stars)
+  particles.forEach(p => {
+    p.opacity = p.baseOpacity + Math.sin(p.twinklePhase) * 0.25;
+    p.twinklePhase += p.twinkleSpeed;
+
+    // Slow drift
+    p.x += p.driftX * 0.1;
+    p.y += p.driftY * 0.1;
+
+    // Wrap around
+    if (p.x < -10) p.x = W + 10;
+    if (p.x > W + 10) p.x = -10;
+    if (p.y < -10) p.y = H + 10;
+    if (p.y > H + 10) p.y = -10;
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+
+    // Glow effect for brighter stars
+    if (p.radius > 1.5) {
+      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 3);
+      glow.addColorStop(0, p.color);
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.fillRect(p.x - p.radius * 3, p.y - p.radius * 3, p.radius * 6, p.radius * 6);
+    }
+
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = Math.max(0, Math.min(1, p.opacity));
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  // Draw shooting stars
+  shootingStars.forEach((s, i) => {
+    s.trail.push({ x: s.x, y: s.y, life: s.life });
+    if (s.trail.length > 30) s.trail.shift();
+
+    s.x += s.vx;
+    s.y += s.vy;
+    s.life -= s.decay;
+
+    // Draw trail
+    if (s.trail.length > 1) {
+      ctx.beginPath();
+      ctx.moveTo(s.trail[0].x, s.trail[0].y);
+      for (let j = 1; j < s.trail.length; j++) {
+        ctx.lineTo(s.trail[j].x, s.trail[j].y);
+      }
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = s.life;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // Bright head
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = s.life;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  shootingStars = shootingStars.filter(s => s.life > 0);
+  spawnShootingStar();
+
+  requestAnimationFrame(animateStars);
+}
+
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  createParticles(250);
+});
+
+resizeCanvas();
+createParticles(250);
+animateStars();
+
+// ============================================================
+// 2. BIRTHDAY COUNTDOWN FLIP CLOCK
+// ============================================================
+const BIRTH_MONTH = 6;   // June
+const BIRTH_DAY = 17;
+const BIRTH_YEAR = 2005;
+
+function getNextBirthday() {
+  const now = new Date();
+  // Try this year's birthday first
+  let target = new Date(now.getFullYear(), BIRTH_MONTH - 1, BIRTH_DAY, 0, 0, 0, 0);
+  // If already passed, use next year
+  if (target <= now) {
+    target = new Date(now.getFullYear() + 1, BIRTH_MONTH - 1, BIRTH_DAY, 0, 0, 0, 0);
+  }
+  return target;
+}
+
+const flipCards = {
+  days: { el: document.getElementById('flipDays'), leaf: null, front: null, back: null, value: -1 },
+  hours: { el: document.getElementById('flipHours'), leaf: null, front: null, back: null, value: -1 },
+  mins: { el: document.getElementById('flipMins'), leaf: null, front: null, back: null, value: -1 },
+  secs: { el: document.getElementById('flipSecs'), leaf: null, front: null, back: null, value: -1 },
+};
+
+// Initialize flip card references
+Object.values(flipCards).forEach(card => {
+  card.leaf = card.el.querySelector('.flip-leaf');
+  card.front = card.el.querySelector('.flip-leaf-front span');
+  card.back = card.el.querySelector('.flip-leaf-back span');
+  // Read initial top/bottom values
+  card.topSpan = card.el.querySelector('.flip-card-top span');
+  card.bottomSpan = card.el.querySelector('.flip-card-bottom span');
+});
+
+function flipCard(card, newVal) {
+  if (card.value === newVal) return;
+  const oldVal = card.value;
+  card.value = newVal;
+
+  const strVal = String(newVal).padStart(2, '0');
+  const strOld = oldVal === -1 ? strVal : String(oldVal).padStart(2, '0');
+
+  if (oldVal === -1) {
+    // First render — no animation
+    card.front.textContent = strVal;
+    card.back.textContent = strVal;
+    card.topSpan.textContent = strVal;
+    card.bottomSpan.textContent = strVal;
+    return;
+  }
+
+  // Set up the flip: back of leaf shows the NEW number
+  card.back.textContent = strVal;
+  // Front of leaf shows the OLD number
+  card.front.textContent = strOld;
+  // Top stays on OLD during flip
+  card.topSpan.textContent = strOld;
+  // Bottom already shows new (updated after flip)
+
+  // Trigger flip
+  card.leaf.classList.add('flipping');
+
+  // After half the animation, update top to new
+  setTimeout(() => {
+    card.topSpan.textContent = strVal;
+    card.bottomSpan.textContent = strVal;
+  }, 300);
+
+  // After flip completes, reset leaf
+  setTimeout(() => {
+    card.leaf.classList.remove('flipping');
+    card.front.textContent = strVal;
+  }, 600);
+}
+
+function updateCountdown() {
+  const target = getNextBirthday();
+  const now = new Date();
+  let diff = target - now;
+
+  if (diff < 0) diff = 0;
+
+  const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+  flipCard(flipCards.days, d);
+  flipCard(flipCards.hours, h);
+  flipCard(flipCards.mins, m);
+  flipCard(flipCards.secs, s);
+
+  // Calculate her age
+  const birthdayThisYear = new Date(now.getFullYear(), BIRTH_MONTH - 1, BIRTH_DAY);
+  const age = now.getFullYear() - BIRTH_YEAR - (now < birthdayThisYear ? 1 : 0);
+  const ageEl = document.getElementById('ageDisplay');
+  if (ageEl) ageEl.textContent = age;
+}
+
+// Start countdown
+updateCountdown();
+setInterval(updateCountdown, 1000);
+
+// ============================================================
+// 3. HEART INTERACTION + MUSIC + MODAL
+// ============================================================
+const heartSVG = document.getElementById('heartSVG');
+const heartContainer = document.getElementById('heartContainer');
+const bgMusic = document.getElementById('bgMusic');
+const musicToggle = document.getElementById('musicToggle');
+const messageModal = document.getElementById('messageModal');
+let musicStarted = false;
+let fallbackAudioCtx = null;
+let fallbackPlaying = false;
+
+// ============================================================
+// Web Audio API Fallback Melody (music-box style)
+// ============================================================
+function playFallbackMelody() {
+  if (fallbackPlaying) return;
+  try {
+    fallbackAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    fallbackPlaying = true;
+
+    // Gentle music-box melody: "Twinkle Twinkle Little Star" inspired
+    const notes = [
+      // freq, startTime, duration
+      [523.25, 0, 0.5], [523.25, 0.6, 0.5],   // C C
+      [783.99, 1.2, 0.5], [783.99, 1.8, 0.5], // G G
+      [880.00, 2.4, 0.5], [880.00, 3.0, 0.5], // A A
+      [783.99, 3.6, 1.0],                       // G (long)
+      [698.46, 4.8, 0.5], [698.46, 5.4, 0.5], // F F
+      [659.25, 6.0, 0.5], [659.25, 6.6, 0.5], // E E
+      [587.33, 7.2, 0.5], [587.33, 7.8, 0.5], // D D
+      [523.25, 8.4, 1.0],                       // C (long)
+      [783.99, 9.6, 0.5], [783.99, 10.2, 0.5],
+      [698.46, 10.8, 0.5], [698.46, 11.4, 0.5],
+      [659.25, 12.0, 0.5], [659.25, 12.6, 0.5],
+      [587.33, 13.2, 1.0],
+      [783.99, 14.4, 0.5], [783.99, 15.0, 0.5],
+      [698.46, 15.6, 0.5], [698.46, 16.2, 0.5],
+      [659.25, 16.8, 0.5], [659.25, 17.4, 0.5],
+      [587.33, 18.0, 1.0],
+      [523.25, 19.2, 0.5], [523.25, 19.8, 0.5],
+      [783.99, 20.4, 0.5], [783.99, 21.0, 0.5],
+      [880.00, 21.6, 0.5], [880.00, 22.2, 0.5],
+      [783.99, 22.8, 1.0],
+      [698.46, 24.0, 0.5], [698.46, 24.6, 0.5],
+      [659.25, 25.2, 0.5], [659.25, 25.8, 0.5],
+      [587.33, 26.4, 0.5], [587.33, 27.0, 0.5],
+      [523.25, 27.6, 1.5],
+    ];
+
+    // Add reverb-like effect — second oscillator for richness
+    notes.forEach(([freq, start, dur]) => {
+      ['sine', 'triangle'].forEach((waveType, wi) => {
+        const osc = fallbackAudioCtx.createOscillator();
+        const gain = fallbackAudioCtx.createGain();
+        osc.type = waveType;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(wi === 0 ? 0.06 : 0.03, fallbackAudioCtx.currentTime + start);
+        gain.gain.exponentialRampToValueAtTime(0.001, fallbackAudioCtx.currentTime + start + dur);
+        osc.connect(gain);
+        gain.connect(fallbackAudioCtx.destination);
+        osc.start(fallbackAudioCtx.currentTime + start);
+        osc.stop(fallbackAudioCtx.currentTime + start + dur + 0.3);
+      });
+    });
+
+    // Loop after ~29 seconds
+    setTimeout(() => {
+      fallbackPlaying = false;
+      if (musicStarted && fallbackAudioCtx && fallbackAudioCtx.state !== 'closed') {
+        playFallbackMelody();
+      }
+    }, 29500);
+
+  } catch (e) {
+    console.log('Web Audio API fallback failed:', e);
+    fallbackPlaying = false;
+  }
+}
+
+function stopFallbackMelody() {
+  fallbackPlaying = false;
+  if (fallbackAudioCtx) {
+    fallbackAudioCtx.close().catch(() => {});
+    fallbackAudioCtx = null;
+  }
+}
+
+// Handle audio element errors — try fallback
+bgMusic.addEventListener('error', () => {
+  console.log('MP3 file not found, using Web Audio API fallback melody');
+  if (musicStarted && !fallbackPlaying) {
+    playFallbackMelody();
+  }
+});
+
+function startMusic() {
+  if (musicStarted) return;
+  musicStarted = true;
+
+  // Try MP3 first
+  bgMusic.play().then(() => {
+    musicToggle.classList.add('visible', 'playing');
+    console.log('Playing MP3 background music');
+  }).catch(() => {
+    // MP3 failed or not available — use Web Audio fallback
+    console.log('MP3 unavailable, using fallback melody');
+    playFallbackMelody();
+    musicToggle.classList.add('visible', 'playing');
+  });
+}
+
+function toggleMusic() {
+  const isPlaying = musicToggle.classList.contains('playing');
+
+  if (isPlaying) {
+    // Stop everything
+    bgMusic.pause();
+    stopFallbackMelody();
+    musicToggle.classList.remove('playing');
+    musicStarted = !!fallbackAudioCtx;
+  } else {
+    // Try MP3 first
+    if (bgMusic.readyState >= 2 && bgMusic.paused) {
+      bgMusic.play().then(() => {
+        musicToggle.classList.add('playing');
+      }).catch(() => {
+        // Fallback
+        playFallbackMelody();
+        musicToggle.classList.add('playing');
+        musicStarted = true;
+      });
+    } else {
+      // Use fallback melody
+      playFallbackMelody();
+      musicToggle.classList.add('playing');
+      musicStarted = true;
+    }
+  }
+}
+
+function spawnHeartBurst(x, y) {
+  const heartChars = ['💕', '💖', '💗', '💝', '✨', '💫', '🌸', '💛', '❤️', '🩷'];
+  for (let i = 0; i < 35; i++) {
+    const el = document.createElement('span');
+    el.className = 'floating-heart';
+    el.textContent = heartChars[Math.floor(Math.random() * heartChars.length)];
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.setProperty('--dx', (Math.random() - 0.5) * 400 + 'px');
+    el.style.setProperty('--dy', -(Math.random() * 350 + 100) + 'px');
+    el.style.setProperty('--rot', (Math.random() - 0.5) * 720 + 'deg');
+    el.style.animationDuration = (2 + Math.random() * 2.5) + 's';
+    el.style.fontSize = (1 + Math.random() * 2) + 'rem';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+}
+
+heartContainer.addEventListener('click', (e) => {
+  // Heart burst animation
+  heartSVG.classList.add('clicked');
+  setTimeout(() => heartSVG.classList.remove('clicked'), 600);
+
+  // Get click position for burst origin
+  const rect = heartSVG.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+
+  // Spawn floating hearts
+  spawnHeartBurst(cx, cy);
+
+  // Start music
+  startMusic();
+
+  // Show message modal after a slight delay
+  setTimeout(() => {
+    messageModal.classList.add('active');
+  }, 500);
+});
+
+// Music toggle button
+musicToggle.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleMusic();
+});
+
+// Close modal
+function closeModal() {
+  messageModal.classList.remove('active');
+}
+
+messageModal.addEventListener('click', (e) => {
+  if (e.target === messageModal) closeModal();
+});
+
+// ============================================================
+// 3. INDEXEDDB STORAGE
+// ============================================================
+const DB_NAME = 'BirthdayMemorial';
+const DB_VERSION = 1;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('photos')) {
+        db.createObjectStore('photos', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('recordings')) {
+        db.createObjectStore('recordings', { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// Photo operations
+async function savePhoto(dataUrl) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('photos', 'readwrite');
+    const store = tx.objectStore('photos');
+    const photo = {
+      id: 'photo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      data: dataUrl,
+      timestamp: Date.now()
+    };
+    const req = store.add(photo);
+    req.onsuccess = () => resolve(photo);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function loadPhotos() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('photos', 'readonly');
+    const store = tx.objectStore('photos');
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result.sort((a, b) => b.timestamp - a.timestamp));
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deletePhoto(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('photos', 'readwrite');
+    const store = tx.objectStore('photos');
+    const req = store.delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// Recording operations
+async function saveRecording(blob) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('recordings', 'readwrite');
+    const store = tx.objectStore('recordings');
+    const recording = {
+      id: 'rec_' + Date.now(),
+      data: blob,
+      timestamp: Date.now()
+    };
+    const req = store.add(recording);
+    req.onsuccess = () => resolve(recording);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function loadRecordings() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('recordings', 'readonly');
+    const store = tx.objectStore('recordings');
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result.sort((a, b) => b.timestamp - a.timestamp));
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteRecording(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('recordings', 'readwrite');
+    const store = tx.objectStore('recordings');
+    const req = store.delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// ============================================================
+// 4. PHOTO GALLERY
+// ============================================================
+const galleryGrid = document.getElementById('galleryGrid');
+const photoInput = document.getElementById('photoInput');
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+
+// Generate placeholder photos using canvas
+function generatePlaceholderPhotos() {
+  const colors = [
+    ['#ff6b9d', '#c44569'], ['#6b9dff', '#4569c4'],
+    ['#9d6bff', '#6945c4'], ['#ff9d6b', '#c46945'],
+    ['#6bff9d', '#45c469'], ['#ffd700', '#ff8c00']
+  ];
+  return colors.map(([c1, c2], i) => {
+    const c = document.createElement('canvas');
+    c.width = 400; c.height = 400;
+    const cx = c.getContext('2d');
+    const grad = cx.createLinearGradient(0, 0, 400, 400);
+    grad.addColorStop(0, c1); grad.addColorStop(1, c2);
+    cx.fillStyle = grad;
+    cx.fillRect(0, 0, 400, 400);
+    // Draw decorative elements
+    cx.fillStyle = 'rgba(255,255,255,0.15)';
+    cx.beginPath();
+    cx.arc(200, 160, 80, 0, Math.PI * 2); cx.fill();
+    cx.beginPath();
+    cx.arc(140, 280, 60, 0, Math.PI * 2); cx.fill();
+    cx.beginPath();
+    cx.arc(260, 280, 60, 0, Math.PI * 2); cx.fill();
+
+    const emojis = ['🌟', '💕', '📸', '🎂', '💫', '🌸'];
+    cx.font = '60px serif';
+    cx.textAlign = 'center';
+    cx.fillText(emojis[i], 200, 200);
+
+    return {
+      id: 'placeholder_' + i,
+      data: c.toDataURL('image/jpeg', 0.8),
+      timestamp: Date.now() - (6 - i) * 86400000
+    };
+  });
+}
+
+async function renderGallery() {
+  let photos = await loadPhotos();
+
+  // If no photos, add placeholders (but don't save to DB to keep it clean)
+  if (photos.length === 0) {
+    photos = generatePlaceholderPhotos();
+  }
+
+  // Clear existing items (keep add button)
+  const addBtn = document.getElementById('addPhotoBtn');
+  galleryGrid.innerHTML = '';
+  galleryGrid.appendChild(addBtn);
+
+  photos.forEach(photo => {
+    const item = document.createElement('div');
+    item.className = 'gallery-item';
+    item.innerHTML = `
+      <img src="${photo.data}" alt="回忆照片" loading="lazy">
+      <button class="delete-btn" data-id="${photo.id}" title="删除">✕</button>
+    `;
+    // Click to open lightbox
+    item.querySelector('img').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openLightbox(photo.data);
+    });
+    // Delete button
+    item.querySelector('.delete-btn').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (confirm('确定删除这张照片吗？')) {
+        if (!photo.id.startsWith('placeholder_')) {
+          await deletePhoto(photo.id);
+        }
+        renderGallery();
+      }
+    });
+    galleryGrid.insertBefore(item, addBtn);
+  });
+}
+
+// Add photo button
+document.getElementById('addPhotoBtn').addEventListener('click', () => {
+  photoInput.click();
+});
+
+photoInput.addEventListener('change', async (e) => {
+  const files = e.target.files;
+  for (const file of files) {
+    const dataUrl = await readFileAsDataURL(file);
+    await savePhoto(dataUrl);
+  }
+  photoInput.value = '';
+  renderGallery();
+});
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Drag and drop on the entire gallery section
+const gallerySection = document.getElementById('gallery');
+gallerySection.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+});
+gallerySection.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  const files = e.dataTransfer.files;
+  for (const file of files) {
+    if (file.type.startsWith('image/')) {
+      const dataUrl = await readFileAsDataURL(file);
+      await savePhoto(dataUrl);
+    }
+  }
+  renderGallery();
+});
+
+// Lightbox
+function openLightbox(src) {
+  lightboxImg.src = src;
+  lightbox.classList.add('active');
+}
+function closeLightbox() {
+  lightbox.classList.remove('active');
+}
+
+// ============================================================
+// 5. VOICE RECORDING
+// ============================================================
+const recordBtn = document.getElementById('recordBtn');
+const recordTimer = document.getElementById('recordTimer');
+const recordingsList = document.getElementById('recordingsList');
+
+let mediaRecorder = null;
+let audioChunks = [];
+let recordStartTime = 0;
+let recordInterval = null;
+let isRecording = false;
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : 'audio/webm';
+
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(audioChunks, { type: mimeType });
+      await saveRecording(blob);
+      renderRecordings();
+    };
+
+    mediaRecorder.start(100);
+    isRecording = true;
+    recordBtn.classList.add('recording');
+    recordBtn.textContent = '⏹️';
+    recordStartTime = Date.now();
+
+    recordInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+      const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const secs = String(elapsed % 60).padStart(2, '0');
+      recordTimer.textContent = `${mins}:${secs}`;
+    }, 200);
+
+  } catch (err) {
+    alert('无法访问麦克风，请检查浏览器权限设置。');
+    console.error('Mic access error:', err);
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && isRecording) {
+    mediaRecorder.stop();
+    isRecording = false;
+    recordBtn.classList.remove('recording');
+    recordBtn.textContent = '🎤';
+    clearInterval(recordInterval);
+    recordTimer.textContent = '00:00';
+  }
+}
+
+recordBtn.addEventListener('click', () => {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+});
+
+async function renderRecordings() {
+  const recordings = await loadRecordings();
+  recordingsList.innerHTML = '';
+
+  if (recordings.length === 0) {
+    recordingsList.innerHTML = '<p style="color:rgba(255,255,255,0.3);text-align:center;padding:2rem;">还没有语音留言，点击麦克风开始录音吧 💬</p>';
+    return;
+  }
+
+  recordings.forEach(rec => {
+    const url = URL.createObjectURL(rec.data);
+    const date = new Date(rec.timestamp);
+    const timeStr = `${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2,'0')}`;
+
+    const item = document.createElement('div');
+    item.className = 'recording-item';
+
+    const audio = new Audio(url);
+
+    item.innerHTML = `
+      <button class="play-btn" data-state="play">▶️</button>
+      <span class="rec-info">🎙️ ${timeStr}</span>
+      <button class="rec-delete" title="删除">🗑️</button>
+    `;
+
+    const playBtn = item.querySelector('.play-btn');
+    playBtn.addEventListener('click', () => {
+      if (audio.paused) {
+        // Stop all other audio
+        document.querySelectorAll('.recording-item audio').forEach(a => {
+          if (a !== audio) { a.pause(); a.currentTime = 0; }
+        });
+        audio.play();
+        playBtn.textContent = '⏸️';
+        playBtn.setAttribute('data-state', 'pause');
+      } else {
+        audio.pause();
+        playBtn.textContent = '▶️';
+        playBtn.setAttribute('data-state', 'play');
+      }
+    });
+
+    audio.addEventListener('ended', () => {
+      playBtn.textContent = '▶️';
+      playBtn.setAttribute('data-state', 'play');
+    });
+
+    item.querySelector('.rec-delete').addEventListener('click', async () => {
+      if (confirm('确定删除这条录音吗？')) {
+        URL.revokeObjectURL(url);
+        await deleteRecording(rec.id);
+        renderRecordings();
+      }
+    });
+
+    // Store audio element reference
+    item._audio = audio;
+    recordingsList.appendChild(item);
+  });
+}
+
+// ============================================================
+// 6. CAMERA MODULE
+// ============================================================
+const cameraPreview = document.getElementById('cameraPreview');
+const cameraVideo = document.getElementById('cameraVideo');
+const cameraCanvas = document.getElementById('cameraCanvas');
+const cameraFlash = document.getElementById('cameraFlash');
+const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+const cameraStartBtn = document.getElementById('cameraStartBtn');
+const cameraCaptureBtn = document.getElementById('cameraCaptureBtn');
+const cameraStopBtn = document.getElementById('cameraStopBtn');
+
+let cameraStream = null;
+
+async function startCamera() {
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    cameraVideo.srcObject = cameraStream;
+    cameraPlaceholder.style.display = 'none';
+    cameraVideo.style.display = 'block';
+    cameraStartBtn.style.display = 'none';
+    cameraCaptureBtn.style.display = 'inline-block';
+    cameraStopBtn.style.display = 'inline-block';
+  } catch (err) {
+    alert('无法打开摄像头，请检查浏览器权限设置。');
+    console.error('Camera access error:', err);
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  cameraVideo.srcObject = null;
+  cameraVideo.style.display = 'none';
+  cameraPlaceholder.style.display = 'flex';
+  cameraStartBtn.style.display = 'inline-block';
+  cameraCaptureBtn.style.display = 'none';
+  cameraStopBtn.style.display = 'none';
+}
+
+function capturePhoto() {
+  if (!cameraStream) return;
+
+  const video = cameraVideo;
+  const canvas = cameraCanvas;
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+
+  const ctx = canvas.getContext('2d');
+  // Mirror the image since video is mirrored
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+  ctx.restore();
+
+  // Add heart overlay
+  ctx.fillStyle = 'rgba(255, 107, 157, 0.08)';
+  ctx.beginPath();
+  const hx = canvas.width / 2, hy = canvas.height / 2;
+  const s = Math.min(canvas.width, canvas.height) * 0.3;
+  drawHeartPath(ctx, hx, hy, s);
+  ctx.fill();
+
+  // Flash effect
+  cameraFlash.classList.add('flash');
+  setTimeout(() => cameraFlash.classList.remove('flash'), 150);
+
+  // Save photo
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+  savePhoto(dataUrl).then(() => renderGallery());
+}
+
+function drawHeartPath(ctx, x, y, size) {
+  const s = size / 100;
+  ctx.moveTo(x, y + size * 0.3);
+  ctx.bezierCurveTo(x, y - size * 0.1, x - size * 0.5, y - size * 0.1, x - size * 0.5, y + size * 0.15);
+  ctx.bezierCurveTo(x - size * 0.5, y + size * 0.45, x, y + size * 0.6, x, y + size * 0.88);
+  ctx.bezierCurveTo(x, y + size * 0.6, x + size * 0.5, y + size * 0.45, x + size * 0.5, y + size * 0.15);
+  ctx.bezierCurveTo(x + size * 0.5, y - size * 0.1, x, y - size * 0.1, x, y + size * 0.3);
+}
+
+cameraStartBtn.addEventListener('click', startCamera);
+cameraCaptureBtn.addEventListener('click', capturePhoto);
+cameraStopBtn.addEventListener('click', stopCamera);
+
+// ============================================================
+// 7. NAVIGATION
+// ============================================================
+const navDots = document.querySelectorAll('.nav-dot');
+const sections = document.querySelectorAll('.section, #hero');
+
+// Click to scroll
+navDots.forEach(dot => {
+  dot.addEventListener('click', () => {
+    const target = document.getElementById(dot.dataset.target);
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+// Update active dot on scroll
+const observerOptions = { threshold: 0.4 };
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id || 'hero';
+      navDots.forEach(d => d.classList.remove('active'));
+      const activeDot = document.querySelector(`.nav-dot[data-target="${id}"]`);
+      if (activeDot) activeDot.classList.add('active');
+    }
+  });
+}, observerOptions);
+
+sections.forEach(s => observer.observe(s));
+
+// ============================================================
+// 8. INITIALIZATION
+// ============================================================
+async function init() {
+  await renderGallery();
+  await renderRecordings();
+}
+
+init();
+
+// ============================================================
+// 9. BIRTHDAY CONFETTI ON LOAD (optional surprise)
+// ============================================================
+setTimeout(() => {
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  // Subtle welcome burst — only a few hearts
+  const few = ['💕', '✨', '💫', '🌟'];
+  for (let i = 0; i < 8; i++) {
+    const el = document.createElement('span');
+    el.className = 'floating-heart';
+    el.textContent = few[Math.floor(Math.random() * few.length)];
+    el.style.left = (cx + (Math.random() - 0.5) * 300) + 'px';
+    el.style.top = (cy + (Math.random() - 0.5) * 200) + 'px';
+    el.style.setProperty('--dx', (Math.random() - 0.5) * 200 + 'px');
+    el.style.setProperty('--dy', -(Math.random() * 250 + 80) + 'px');
+    el.style.setProperty('--rot', (Math.random() - 0.5) * 360 + 'deg');
+    el.style.animationDuration = (2.5 + Math.random() * 2) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+}, 1500);
+
+console.log('🌟 生日快乐！愿星光永远照耀着你。');
+console.log('💕 点击爱心查看留言 | 📸 滚动浏览照片墙 | 🎙️ 录制语音 | 📷 打开摄像头');
+</script>
+</body>
+</html>
