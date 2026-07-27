@@ -263,6 +263,68 @@ body {
   animation: heartBurst 0.6s ease-out forwards;
 }
 
+/* Heart split-open animation for hand gesture */
+.heart-left,
+.heart-right {
+  position: fixed;
+  z-index: 200;
+  pointer-events: none;
+  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s;
+}
+
+.heart-left.split-open {
+  transform: translateX(-40vw) rotate(-15deg);
+  opacity: 0.7;
+}
+
+.heart-right.split-open {
+  transform: translateX(40vw) rotate(15deg);
+  opacity: 0.7;
+}
+
+/* Gesture hint overlay */
+.gesture-hint {
+  position: absolute;
+  bottom: -3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.5);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.5s;
+  pointer-events: none;
+  font-family: var(--font-body);
+}
+
+.gesture-hint.active {
+  opacity: 1;
+  animation: hintPulse 2s ease-in-out infinite;
+}
+
+/* Gesture status indicator in camera */
+.gesture-status {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.4rem 1.2rem;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.6);
+  color: rgba(255,255,255,0.7);
+  font-size: 0.8rem;
+  z-index: 5;
+  transition: all 0.3s;
+  pointer-events: none;
+  font-family: var(--font-body);
+}
+
+.gesture-status.detected {
+  background: rgba(255,107,157,0.3);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(255,107,157,0.4);
+}
+
 @keyframes heartbeat {
   0%, 100% { transform: scale(1); }
   14% { transform: scale(1.08); }
@@ -560,6 +622,20 @@ body {
   max-width: 500px;
 }
 
+#audioVisualizer {
+  width: 100%;
+  max-width: 400px;
+  height: 200px;
+  border-radius: 16px;
+  background: rgba(0,0,0,0.2);
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+#audioVisualizer.active {
+  opacity: 1;
+}
+
 .record-btn {
   width: 80px; height: 80px;
   border-radius: 50%;
@@ -768,6 +844,112 @@ body {
   pointer-events: none;
 }
 
+/* ============ Message Bubbles Section ============ */
+.bubbles-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(0.8rem, 2vw, 1.5rem);
+  width: 100%;
+  max-width: 700px;
+  perspective: 800px;
+}
+
+.bubble {
+  width: clamp(90px, 20vw, 140px);
+  height: clamp(90px, 20vw, 140px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(255,107,157,0.35), rgba(196,69,105,0.25));
+  border: 2px solid rgba(255,107,157,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: bubbleFloat 4s ease-in-out infinite;
+  position: relative;
+  box-shadow: 0 0 20px rgba(255,107,157,0.15), inset 0 0 20px rgba(255,255,255,0.05);
+}
+
+.bubble:nth-child(1) { animation-delay: 0s; }
+.bubble:nth-child(2) { animation-delay: 0.5s; }
+.bubble:nth-child(3) { animation-delay: 1s; }
+.bubble:nth-child(4) { animation-delay: 1.5s; }
+.bubble:nth-child(5) { animation-delay: 0.3s; }
+.bubble:nth-child(6) { animation-delay: 0.8s; }
+.bubble:nth-child(7) { animation-delay: 1.3s; }
+.bubble:nth-child(8) { animation-delay: 1.8s; }
+
+.bubble span {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  transition: transform 0.4s;
+  filter: drop-shadow(0 0 8px rgba(255,107,157,0.4));
+}
+
+.bubble:hover {
+  transform: translateY(-8px) scale(1.1);
+  border-color: rgba(255,107,157,0.7);
+  box-shadow: 0 0 40px rgba(255,107,157,0.4), inset 0 0 30px rgba(255,255,255,0.1);
+}
+
+.bubble:hover span {
+  transform: scale(1.2) rotate(10deg);
+}
+
+.bubble:active, .bubble.popping {
+  transform: scale(1.4);
+  border-color: rgba(255,107,157,1);
+  box-shadow: 0 0 60px rgba(255,107,157,0.8);
+  background: radial-gradient(circle at 35% 35%, rgba(255,107,157,0.6), rgba(255,184,208,0.4));
+}
+
+@keyframes bubbleFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-12px) rotate(1deg); }
+  75% { transform: translateY(6px) rotate(-1deg); }
+}
+
+/* Bubble reveal overlay */
+.bubble-reveal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  z-index: 250;
+  text-align: center;
+  pointer-events: none;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bubble-reveal.active {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.bubble-reveal-text {
+  font-family: var(--font-cursive);
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  color: #fff;
+  text-shadow: 0 0 30px rgba(255,107,157,0.8), 0 0 60px rgba(255,107,157,0.4), 0 0 90px rgba(255,184,208,0.3);
+  background: rgba(10,10,30,0.85);
+  backdrop-filter: blur(20px);
+  padding: 2rem 3rem;
+  border-radius: 24px;
+  border: 1px solid rgba(255,107,157,0.4);
+  animation: revealGlow 2s ease-in-out infinite;
+}
+
+@keyframes revealGlow {
+  0%, 100% { box-shadow: 0 0 30px rgba(255,107,157,0.3); }
+  50% { box-shadow: 0 0 60px rgba(255,107,157,0.6); }
+}
+
+.bubble-reveal-particles {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 249;
+}
+
 /* ============ Navigation Dots ============ */
 .nav-dots {
   position: fixed;
@@ -859,7 +1041,8 @@ body {
             fill="url(#heartGrad)" filter="url(#heartGlow)"/>
     </svg>
   </div>
-  <p class="heart-hint">💛 点击爱心，听听我想对你说的话</p>
+  <p class="heart-hint">💛 点击爱心，或打开摄像头用手势打开</p>
+  <p class="gesture-hint" id="gestureHint">🖐️ 在摄像头前张开手掌，爱心将为你打开</p>
 </section>
 
 <!-- ============ Message Modal ============ -->
@@ -912,6 +1095,7 @@ body {
   <h2 class="section-title">🎙️ 语音留言</h2>
   <p class="section-desc">录下你想说的话，让声音跨越距离</p>
   <div class="voice-container">
+    <canvas id="audioVisualizer" width="400" height="200"></canvas>
     <button id="recordBtn" class="record-btn" title="点击开始录音">🎤</button>
     <div id="recordTimer" class="record-timer">00:00</div>
     <div class="recordings-list" id="recordingsList"></div>
@@ -928,6 +1112,7 @@ body {
       <canvas id="cameraCanvas"></canvas>
       <div class="camera-flash" id="cameraFlash"></div>
       <div class="camera-placeholder" id="cameraPlaceholder">📷</div>
+      <div class="gesture-status" id="gestureStatus">🖐️ 张开手掌打开爱心</div>
     </div>
     <div class="camera-actions">
       <button id="cameraStartBtn" class="camera-btn start">打开摄像头</button>
@@ -937,12 +1122,33 @@ body {
   </div>
 </section>
 
+<!-- ============ Messages Section ============ -->
+<section id="messages" class="section">
+  <h2 class="section-title">💌 我想对你说</h2>
+  <p class="section-desc">点击气泡，听听我的心声</p>
+  <div class="bubbles-container" id="bubblesContainer">
+    <div class="bubble" data-msg="我好想你，每一天都在想"><span>💭</span></div>
+    <div class="bubble" data-msg="我们永远是彼此最重要的人"><span>💎</span></div>
+    <div class="bubble" data-msg="谢谢你出现在我的生命里"><span>🌟</span></div>
+    <div class="bubble" data-msg="不管多远，你都在我心里"><span>🌙</span></div>
+    <div class="bubble" data-msg="希望你每天都开心快乐"><span>🌻</span></div>
+    <div class="bubble" data-msg="你是最特别的存在"><span>🦋</span></div>
+    <div class="bubble" data-msg="我们的友谊永远不变"><span>🤝</span></div>
+    <div class="bubble" data-msg="生日快乐，我最珍贵的宝藏"><span>🎂</span></div>
+  </div>
+  <div class="bubble-reveal" id="bubbleReveal">
+    <p class="bubble-reveal-text" id="bubbleRevealText"></p>
+    <div class="bubble-reveal-particles" id="bubbleRevealParticles"></div>
+  </div>
+</section>
+
 <!-- Navigation Dots -->
 <nav class="nav-dots" id="navDots">
   <button class="nav-dot active" data-target="hero" title="首页"></button>
   <button class="nav-dot" data-target="gallery" title="照片墙"></button>
   <button class="nav-dot" data-target="voice" title="语音留言"></button>
   <button class="nav-dot" data-target="camera" title="摄像头"></button>
+  <button class="nav-dot" data-target="messages" title="我想说"></button>
 </nav>
 
 <footer class="site-footer">✨ 思念如星辰，纵隔山海，依旧闪耀 ✨</footer>
@@ -951,6 +1157,40 @@ body {
 <audio id="bgMusic" loop preload="auto">
   <source src="assets/song.mp3" type="audio/mpeg">
 </audio>
+
+<!-- MediaPipe Hand Landmarker (loaded on demand) -->
+<script type="module">
+  // Export globally for camera gesture detection
+  let mpReady = false;
+  window.initMediaPipe = async function() {
+    if (mpReady) return true;
+    try {
+      const { HandLandmarker, FilesetResolver } = await import(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/vision_bundle.mjs'
+      );
+      const vision = await FilesetResolver.forVisionTasks(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm'
+      );
+      window.handLandmarker = await HandLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+          delegate: 'GPU'
+        },
+        runningMode: 'VIDEO',
+        numHands: 2,
+        minHandDetectionConfidence: 0.6,
+        minTrackingConfidence: 0.5,
+      });
+      mpReady = true;
+      console.log('✅ MediaPipe Hands ready');
+      return true;
+    } catch(e) {
+      console.warn('MediaPipe load failed:', e.message);
+      return false;
+    }
+  };
+  window.isMediaPipeReady = () => mpReady;
+</script>
 
 <script>
 // ============================================================
@@ -1792,11 +2032,13 @@ function closeLightbox() {
 }
 
 // ============================================================
-// 5. VOICE RECORDING
+// 5. VOICE RECORDING + AUDIO VISUALIZER
 // ============================================================
 const recordBtn = document.getElementById('recordBtn');
 const recordTimer = document.getElementById('recordTimer');
 const recordingsList = document.getElementById('recordingsList');
+const audioVisCanvas = document.getElementById('audioVisualizer');
+const avCtx = audioVisCanvas.getContext('2d');
 
 let mediaRecorder = null;
 let audioChunks = [];
@@ -1804,12 +2046,146 @@ let recordStartTime = 0;
 let recordInterval = null;
 let isRecording = false;
 
+// Audio analysis
+let audioCtx = null;
+let analyser = null;
+let audioDataArray = null;
+let visAnimId = null;
+let visActive = false;
+
+function initAudioAnalyser(stream) {
+  if (audioCtx) audioCtx.close();
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  analyser.smoothingTimeConstant = 0.7;
+  const source = audioCtx.createMediaStreamSource(stream);
+  source.connect(analyser);
+  // Don't connect to destination to avoid feedback
+  audioDataArray = new Uint8Array(analyser.frequencyBinCount);
+  visActive = true;
+  audioVisCanvas.classList.add('active');
+  if (!visAnimId) animateAudioVisualizer();
+}
+
+function initPlaybackAnalyser(audioEl) {
+  if (audioCtx) audioCtx.close();
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  analyser.smoothingTimeConstant = 0.7;
+  try {
+    const source = audioCtx.createMediaElementSource(audioEl);
+    source.connect(analyser);
+    analyser.connect(audioCtx.destination);
+  } catch(e) {
+    // Already connected, ignore
+    return;
+  }
+  audioDataArray = new Uint8Array(analyser.frequencyBinCount);
+  visActive = true;
+  audioVisCanvas.classList.add('active');
+  if (!visAnimId) animateAudioVisualizer();
+}
+
+function cleanupAudioAnalyser() {
+  visActive = false;
+  audioVisCanvas.classList.remove('active');
+  if (audioCtx) {
+    audioCtx.close().catch(() => {});
+    audioCtx = null;
+    analyser = null;
+    audioDataArray = null;
+  }
+}
+
+function animateAudioVisualizer() {
+  visAnimId = requestAnimationFrame(animateAudioVisualizer);
+  if (!visActive) {
+    // Fade out: gradually clear
+    const imgData = avCtx.getImageData(0, 0, 400, 200);
+    const d = imgData.data;
+    for (let i = 3; i < d.length; i += 4) {
+      d[i] = Math.max(0, d[i] - 8);
+    }
+    avCtx.putImageData(imgData, 0, 0);
+    if (d.every((_, i) => i % 4 !== 3 || d[i] === 0)) {
+      avCtx.clearRect(0, 0, 400, 200);
+      cancelAnimationFrame(visAnimId);
+      visAnimId = null;
+      return;
+    }
+    return;
+  }
+
+  if (!analyser || !audioDataArray) return;
+  analyser.getByteFrequencyData(audioDataArray);
+
+  // Fade background
+  avCtx.fillStyle = 'rgba(0,0,0,0.15)';
+  avCtx.fillRect(0, 0, 400, 200);
+
+  const W = 400, H = 200;
+  const barCount = 64;
+  const barWidth = (W / barCount) * 0.8;
+  const gap = (W / barCount) * 0.2;
+  const cx = W / 2, cy = H / 2;
+
+  // Average volume for central orb
+  let sum = 0;
+  for (let i = 0; i < audioDataArray.length; i++) sum += audioDataArray[i];
+  const avgVolume = sum / audioDataArray.length / 255;
+
+  // Draw central pulsing orb
+  const orbRadius = 15 + avgVolume * 60;
+  const orbGrad = avCtx.createRadialGradient(cx, cy, 0, cx, cy, orbRadius);
+  orbGrad.addColorStop(0, 'rgba(255,107,157,0.9)');
+  orbGrad.addColorStop(0.4, 'rgba(255,107,157,0.4)');
+  orbGrad.addColorStop(1, 'rgba(255,107,157,0)');
+  avCtx.fillStyle = orbGrad;
+  avCtx.beginPath();
+  avCtx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
+  avCtx.fill();
+
+  // Draw frequency bars
+  for (let i = 0; i < barCount; i++) {
+    const val = audioDataArray[i] / 255;
+    const barH = Math.max(2, val * H * 0.8);
+    const x = i * (barWidth + gap);
+    // Gradient from bottom
+    const barGrad = avCtx.createLinearGradient(0, H, 0, H - barH);
+    const hue = 340 + val * 20; // pink range
+    barGrad.addColorStop(0, `hsla(${hue}, 80%, 65%, ${0.3 + val * 0.7})`);
+    barGrad.addColorStop(1, `hsla(${hue}, 100%, 75%, ${0.6 + val * 0.4})`);
+    avCtx.fillStyle = barGrad;
+    avCtx.beginPath();
+    avCtx.roundRect(x, H - barH, barWidth, barH, [2, 2, 0, 0]);
+    avCtx.fill();
+  }
+
+  // Floating particles around orb
+  const particleCount = Math.floor(avgVolume * 25);
+  for (let i = 0; i < particleCount; i++) {
+    const angle = (Date.now() * 0.001 + i * 0.5) % (Math.PI * 2);
+    const dist = orbRadius + 10 + Math.sin(i * 2.7 + Date.now() * 0.003) * 15;
+    const px = cx + Math.cos(angle) * dist;
+    const py = cy + Math.sin(angle) * dist;
+    avCtx.fillStyle = `rgba(255,184,208,${0.5 + Math.random() * 0.5})`;
+    avCtx.beginPath();
+    avCtx.arc(px, py, 1.5 + Math.random() * 2, 0, Math.PI * 2);
+    avCtx.fill();
+  }
+}
+
 async function startRecording() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
       ? 'audio/webm;codecs=opus'
       : 'audio/webm';
+
+    // Set up audio analyser from mic stream
+    initAudioAnalyser(stream);
 
     mediaRecorder = new MediaRecorder(stream, { mimeType });
     audioChunks = [];
@@ -1820,6 +2196,7 @@ async function startRecording() {
 
     mediaRecorder.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
+      cleanupAudioAnalyser();
       const blob = new Blob(audioChunks, { type: mimeType });
       await saveRecording(blob);
       renderRecordings();
@@ -1881,6 +2258,7 @@ async function renderRecordings() {
     item.className = 'recording-item';
 
     const audio = new Audio(url);
+    audio.preload = 'auto';
 
     item.innerHTML = `
       <button class="play-btn" data-state="play">▶️</button>
@@ -1895,11 +2273,14 @@ async function renderRecordings() {
         document.querySelectorAll('.recording-item audio').forEach(a => {
           if (a !== audio) { a.pause(); a.currentTime = 0; }
         });
+        // Route through analyser for visualizer
+        initPlaybackAnalyser(audio);
         audio.play();
         playBtn.textContent = '⏸️';
         playBtn.setAttribute('data-state', 'pause');
       } else {
         audio.pause();
+        cleanupAudioAnalyser();
         playBtn.textContent = '▶️';
         playBtn.setAttribute('data-state', 'play');
       }
@@ -1908,6 +2289,7 @@ async function renderRecordings() {
     audio.addEventListener('ended', () => {
       playBtn.textContent = '▶️';
       playBtn.setAttribute('data-state', 'play');
+      cleanupAudioAnalyser();
     });
 
     item.querySelector('.rec-delete').addEventListener('click', async () => {
@@ -1918,14 +2300,13 @@ async function renderRecordings() {
       }
     });
 
-    // Store audio element reference
     item._audio = audio;
     recordingsList.appendChild(item);
   });
 }
 
 // ============================================================
-// 6. CAMERA MODULE
+// 6. CAMERA MODULE + HAND GESTURE DETECTION
 // ============================================================
 const cameraPreview = document.getElementById('cameraPreview');
 const cameraVideo = document.getElementById('cameraVideo');
@@ -1935,8 +2316,152 @@ const cameraPlaceholder = document.getElementById('cameraPlaceholder');
 const cameraStartBtn = document.getElementById('cameraStartBtn');
 const cameraCaptureBtn = document.getElementById('cameraCaptureBtn');
 const cameraStopBtn = document.getElementById('cameraStopBtn');
+const gestureStatus = document.getElementById('gestureStatus');
+const gestureHint = document.getElementById('gestureHint');
 
 let cameraStream = null;
+let gestureInterval = null;
+let openPalmFrames = 0;
+const GESTURE_THRESHOLD = 15; // frames needed to trigger
+let heartOpenedByGesture = false;
+
+// ============================================================
+// Heart split-open animation (for gesture)
+// ============================================================
+function openHeartWithGesture() {
+  if (heartOpenedByGesture) return;
+  heartOpenedByGesture = true;
+
+  const heartEl = document.getElementById('heartSVG');
+  const rect = heartEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+
+  // Clone the heart SVG into left and right halves
+  const svgClone = heartEl.cloneNode(true);
+  svgClone.removeAttribute('id');
+
+  // Create clip-path version: left heart and right heart
+  // Simpler approach: create two colored heart emojis that split apart
+  const leftHeart = document.createElement('div');
+  leftHeart.className = 'heart-left';
+  leftHeart.innerHTML = heartEl.outerHTML.replace('id="heartSVG"', '');
+  leftHeart.style.cssText = `left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;`;
+  leftHeart.querySelector('svg').style.clipPath = 'inset(0 50% 0 0)';
+  leftHeart.querySelector('svg').style.position = 'static';
+  document.body.appendChild(leftHeart);
+
+  const rightHeart = document.createElement('div');
+  rightHeart.className = 'heart-right';
+  rightHeart.innerHTML = heartEl.outerHTML.replace('id="heartSVG"', '');
+  rightHeart.style.cssText = `left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;`;
+  rightHeart.querySelector('svg').style.clipPath = 'inset(0 0 0 50%)';
+  rightHeart.querySelector('svg').style.position = 'static';
+  document.body.appendChild(rightHeart);
+
+  // Hide original heart
+  heartEl.style.opacity = '0';
+  // Hide the heart particle canvas too
+  const hpCanvas = document.getElementById('heartParticleCanvas');
+  if (hpCanvas) hpCanvas.style.opacity = '0';
+
+  // Trigger split animation
+  requestAnimationFrame(() => {
+    leftHeart.classList.add('split-open');
+    rightHeart.classList.add('split-open');
+  });
+
+  // Burst particles
+  spawnHeartBurst(cx, cy);
+
+  // Show message modal
+  setTimeout(() => {
+    messageModal.classList.add('active');
+  }, 400);
+
+  // Start music
+  startMusic();
+
+  // Cleanup after animation
+  setTimeout(() => {
+    leftHeart.remove();
+    rightHeart.remove();
+    heartEl.style.opacity = '1';
+    if (hpCanvas) hpCanvas.style.opacity = '1';
+    heartOpenedByGesture = false;
+  }, 3000);
+}
+
+// ============================================================
+// Hand gesture detection
+// ============================================================
+function isOpenPalm(landmarks) {
+  // Check if all fingers are extended
+  // Fingertips: 4(thumb), 8(index), 12(middle), 16(ring), 20(pinky)
+  // MCP joints: 5(index), 9(middle), 13(ring), 17(pinky)
+  // Wrist: 0
+  const wrist = landmarks[0];
+  const tips = [4, 8, 12, 16, 20];
+  const mcps = [2, 5, 9, 13, 17]; // thumb IP, index MCP, middle MCP, ring MCP, pinky MCP
+
+  let extendedCount = 0;
+  for (let i = 0; i < tips.length; i++) {
+    const tip = landmarks[tips[i]];
+    const mcp = landmarks[mcps[i]];
+    const wristDist = Math.hypot(tip.x - wrist.x, tip.y - wrist.y, tip.z - wrist.z);
+    const mcpDist = Math.hypot(mcp.x - wrist.x, mcp.y - wrist.y, mcp.z - wrist.z);
+    // Finger is extended if tip is significantly farther from wrist than MCP is
+    if (wristDist > mcpDist * 1.25) {
+      extendedCount++;
+    }
+  }
+  return extendedCount >= 4; // At least 4 fingers extended
+}
+
+async function detectGesture() {
+  if (!window.isMediaPipeReady || !window.isMediaPipeReady()) return;
+  if (!cameraStream || cameraVideo.readyState < 2) return;
+
+  const handLandmarker = window.handLandmarker;
+  if (!handLandmarker) return;
+
+  try {
+    const result = handLandmarker.detectForVideo(cameraVideo, performance.now());
+    const gestureStatusEl = document.getElementById('gestureStatus');
+
+    if (result.landmarks && result.landmarks.length >= 1) {
+      // Check each hand for open palm
+      let openPalms = 0;
+      result.landmarks.forEach(lm => {
+        if (isOpenPalm(lm)) openPalms++;
+      });
+
+      if (openPalms >= 1) {
+        openPalmFrames++;
+        gestureStatusEl.textContent = '🖐️✨ 检测到手掌！保持住...';
+        gestureStatusEl.classList.add('detected');
+        if (gestureHint) gestureHint.classList.add('active');
+
+        if (openPalmFrames >= GESTURE_THRESHOLD) {
+          gestureStatusEl.textContent = '💖 爱心已打开！';
+          openPalmFrames = 0;
+          openHeartWithGesture();
+        }
+      } else {
+        openPalmFrames = Math.max(0, openPalmFrames - 2);
+        gestureStatusEl.textContent = '🖐️ 张开手掌打开爱心';
+        gestureStatusEl.classList.remove('detected');
+        if (gestureHint) gestureHint.classList.remove('active');
+      }
+    } else {
+      openPalmFrames = Math.max(0, openPalmFrames - 1);
+      gestureStatusEl.textContent = '🖐️ 张开手掌打开爱心';
+      gestureStatusEl.classList.remove('detected');
+    }
+  } catch(e) {
+    // Silently ignore detection errors
+  }
+}
 
 async function startCamera() {
   try {
@@ -1950,6 +2475,16 @@ async function startCamera() {
     cameraStartBtn.style.display = 'none';
     cameraCaptureBtn.style.display = 'inline-block';
     cameraStopBtn.style.display = 'inline-block';
+    gestureStatus.style.display = 'block';
+
+    // Initialize MediaPipe for hand gesture detection
+    if (window.initMediaPipe) {
+      const ready = await window.initMediaPipe();
+      if (ready) {
+        openPalmFrames = 0;
+        gestureInterval = setInterval(detectGesture, 200); // 5fps
+      }
+    }
   } catch (err) {
     alert('无法打开摄像头，请检查浏览器权限设置。');
     console.error('Camera access error:', err);
@@ -1957,6 +2492,8 @@ async function startCamera() {
 }
 
 function stopCamera() {
+  if (gestureInterval) { clearInterval(gestureInterval); gestureInterval = null; }
+  openPalmFrames = 0;
   if (cameraStream) {
     cameraStream.getTracks().forEach(t => t.stop());
     cameraStream = null;
@@ -1967,6 +2504,10 @@ function stopCamera() {
   cameraStartBtn.style.display = 'inline-block';
   cameraCaptureBtn.style.display = 'none';
   cameraStopBtn.style.display = 'none';
+  gestureStatus.style.display = 'none';
+  gestureStatus.classList.remove('detected');
+  gestureStatus.textContent = '🖐️ 张开手掌打开爱心';
+  if (gestureHint) gestureHint.classList.remove('active');
 }
 
 function capturePhoto() {
@@ -1978,13 +2519,11 @@ function capturePhoto() {
   canvas.height = video.videoHeight || 480;
 
   const ctx = canvas.getContext('2d');
-  // Mirror the image since video is mirrored
   ctx.save();
   ctx.scale(-1, 1);
   ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
   ctx.restore();
 
-  // Add heart overlay
   ctx.fillStyle = 'rgba(255, 107, 157, 0.08)';
   ctx.beginPath();
   const hx = canvas.width / 2, hy = canvas.height / 2;
@@ -1992,11 +2531,9 @@ function capturePhoto() {
   drawHeartPath(ctx, hx, hy, s);
   ctx.fill();
 
-  // Flash effect
   cameraFlash.classList.add('flash');
   setTimeout(() => cameraFlash.classList.remove('flash'), 150);
 
-  // Save photo
   const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
   savePhoto(dataUrl).then(() => renderGallery());
 }
@@ -2015,7 +2552,84 @@ cameraCaptureBtn.addEventListener('click', capturePhoto);
 cameraStopBtn.addEventListener('click', stopCamera);
 
 // ============================================================
-// 7. NAVIGATION
+// 7. INTERACTIVE MESSAGE BUBBLES
+// ============================================================
+const bubblesContainer = document.getElementById('bubblesContainer');
+const bubbleReveal = document.getElementById('bubbleReveal');
+const bubbleRevealText = document.getElementById('bubbleRevealText');
+const bubbleRevealParticles = document.getElementById('bubbleRevealParticles');
+let bubbleRevealTimeout = null;
+
+bubblesContainer.addEventListener('click', (e) => {
+  const bubble = e.target.closest('.bubble');
+  if (!bubble) return;
+
+  const msg = bubble.dataset.msg;
+  if (!msg) return;
+
+  // Pop animation on bubble
+  bubble.classList.add('popping');
+  setTimeout(() => bubble.classList.remove('popping'), 400);
+
+  // Show revealed message
+  clearTimeout(bubbleRevealTimeout);
+  bubbleRevealText.textContent = msg;
+  bubbleReveal.classList.add('active');
+
+  // Spawn particles around the reveal
+  spawnRevealParticles(bubbleRevealParticles);
+
+  // Auto-hide after 3.5 seconds
+  bubbleRevealTimeout = setTimeout(() => {
+    bubbleReveal.classList.remove('active');
+  }, 3500);
+
+  // Click anywhere to dismiss early
+  const dismiss = () => {
+    bubbleReveal.classList.remove('active');
+    clearTimeout(bubbleRevealTimeout);
+    document.removeEventListener('click', dismiss);
+  };
+  setTimeout(() => document.addEventListener('click', dismiss), 100);
+});
+
+function spawnRevealParticles(container) {
+  const emojis = ['💕', '✨', '💫', '💖', '🌟', '💗', '🩷', '💝', '🌸'];
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('span');
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.cssText = `
+      position: fixed;
+      left: ${cx}px;
+      top: ${cy}px;
+      font-size: ${1 + Math.random() * 2}rem;
+      pointer-events: none;
+      z-index: 251;
+      animation: bubbleParticleBurst ${1.5 + Math.random() * 2}s ease-out forwards;
+      --px: ${(Math.random() - 0.5) * 350}px;
+      --py: ${(Math.random() - 0.5) * 350}px;
+      --rot: ${(Math.random() - 0.5) * 720}deg;
+    `;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+}
+
+// Add particle burst keyframes dynamically
+const bubbleParticleStyle = document.createElement('style');
+bubbleParticleStyle.textContent = `
+  @keyframes bubbleParticleBurst {
+    0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+    100% { transform: translate(var(--px), var(--py)) scale(0.2) rotate(var(--rot)); opacity: 0; }
+  }
+`;
+document.head.appendChild(bubbleParticleStyle);
+
+// ============================================================
+// 8. NAVIGATION
 // ============================================================
 const navDots = document.querySelectorAll('.nav-dot');
 const sections = document.querySelectorAll('.section, #hero');
