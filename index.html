@@ -1541,57 +1541,47 @@ const galleryGrid = document.getElementById('galleryGrid');
 const photoInput = document.getElementById('photoInput');
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightboxImg');
-
-// Generate placeholder photos using canvas
-function generatePlaceholderPhotos() {
-  const colors = [
-    ['#ff6b9d', '#c44569'], ['#6b9dff', '#4569c4'],
-    ['#9d6bff', '#6945c4'], ['#ff9d6b', '#c46945'],
-    ['#6bff9d', '#45c469'], ['#ffd700', '#ff8c00']
-  ];
-  return colors.map(([c1, c2], i) => {
-    const c = document.createElement('canvas');
-    c.width = 400; c.height = 400;
-    const cx = c.getContext('2d');
-    const grad = cx.createLinearGradient(0, 0, 400, 400);
-    grad.addColorStop(0, c1); grad.addColorStop(1, c2);
-    cx.fillStyle = grad;
-    cx.fillRect(0, 0, 400, 400);
-    // Draw decorative elements
-    cx.fillStyle = 'rgba(255,255,255,0.15)';
-    cx.beginPath();
-    cx.arc(200, 160, 80, 0, Math.PI * 2); cx.fill();
-    cx.beginPath();
-    cx.arc(140, 280, 60, 0, Math.PI * 2); cx.fill();
-    cx.beginPath();
-    cx.arc(260, 280, 60, 0, Math.PI * 2); cx.fill();
-
-    const emojis = ['🌟', '💕', '📸', '🎂', '💫', '🌸'];
-    cx.font = '60px serif';
-    cx.textAlign = 'center';
-    cx.fillText(emojis[i], 200, 200);
-
-    return {
-      id: 'placeholder_' + i,
-      data: c.toDataURL('image/jpeg', 0.8),
-      timestamp: Date.now() - (6 - i) * 86400000
-    };
-  });
-}
+// Preloaded photos from assets/photos/
+const PRELOADED_PHOTOS = [
+  '5f7bb131c98b9631577bac0774a7cdfc.JPG',
+  'IMG_5630.JPG',
+  'IMG_6175.JPG',
+  'IMG_7860.jpg',
+  'IMG_7861.jpg',
+  'IMG_7862.jpg',
+  'IMG_7863.jpg',
+  'IMG_7864.jpg',
+  'IMG_7865.jpg',
+  'IMG_7866.jpg',
+  'IMG_7867.jpg',
+  'IMG_7868.jpg',
+  'IMG_7869.jpg',
+  'IMG_9189.PNG',
+];
 
 async function renderGallery() {
   let photos = await loadPhotos();
 
-  // If no photos, add placeholders (but don't save to DB to keep it clean)
-  if (photos.length === 0) {
-    photos = generatePlaceholderPhotos();
-  }
-
   // Clear existing items (keep add button)
   const addBtn = document.getElementById('addPhotoBtn');
   galleryGrid.innerHTML = '';
-  galleryGrid.appendChild(addBtn);
 
+  // Render preloaded photos first (from assets/photos/)
+  PRELOADED_PHOTOS.forEach(filename => {
+    const thumbName = filename.replace(/\.[^.]+$/, '.jpg'); // thumbnail is always .jpg
+    const thumbSrc = 'assets/photos/thumbnails/' + thumbName;
+    const fullSrc = 'assets/photos/' + filename;
+    const item = document.createElement('div');
+    item.className = 'gallery-item';
+    item.innerHTML = `<img src="${thumbSrc}" alt="回忆照片" loading="lazy">`;
+    item.querySelector('img').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openLightbox(fullSrc);
+    });
+    galleryGrid.appendChild(item);
+  });
+
+  // Render user-added photos from IndexedDB
   photos.forEach(photo => {
     const item = document.createElement('div');
     item.className = 'gallery-item';
@@ -1599,23 +1589,22 @@ async function renderGallery() {
       <img src="${photo.data}" alt="回忆照片" loading="lazy">
       <button class="delete-btn" data-id="${photo.id}" title="删除">✕</button>
     `;
-    // Click to open lightbox
     item.querySelector('img').addEventListener('click', (e) => {
       e.stopPropagation();
       openLightbox(photo.data);
     });
-    // Delete button
     item.querySelector('.delete-btn').addEventListener('click', async (e) => {
       e.stopPropagation();
       if (confirm('确定删除这张照片吗？')) {
-        if (!photo.id.startsWith('placeholder_')) {
-          await deletePhoto(photo.id);
-        }
+        await deletePhoto(photo.id);
         renderGallery();
       }
     });
-    galleryGrid.insertBefore(item, addBtn);
+    galleryGrid.appendChild(item);
   });
+
+  // Add photo button always at the end
+  galleryGrid.appendChild(addBtn);
 }
 
 // Add photo button
