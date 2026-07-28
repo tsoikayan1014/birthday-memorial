@@ -2032,23 +2032,45 @@ async function initFirebase() {
 }
 
 // ---- Sync status indicator ----
+let syncPendingCount = 0; // Track in-flight uploads
+
 function updateSyncStatus(state) {
   const el = document.getElementById('syncStatus');
   if (!el) return;
   el.className = 'sync-status ' + state;
-  if (state === 'connected') { el.textContent = '☁️ 已同步'; el.title = '数据已同步到云端'; }
-  else if (state === 'uploading') { el.textContent = '☁️ 上传中...'; el.title = '正在上传到云端'; }
+  if (state === 'connected') { el.textContent = '☁️ 已连接'; el.title = '云端已连接，待上传'; }
+  else if (state === 'synced') { el.textContent = '☁️✅ 同步完成'; el.title = '所有数据已同步到云端'; }
+  else if (state === 'uploading') { el.textContent = '☁️⬆ 上传中...'; el.title = '正在上传到云端...'; }
   else if (state === 'offline') { el.textContent = '☁️ 离线'; el.title = '使用本地存储，数据不会同步'; }
 }
 function toastSync(msg, icon) {
   const el = document.getElementById('syncStatus');
   if (!el) return;
-  el.textContent = (icon||'✅') + ' ' + msg;
-  el.className = 'sync-status connected';
-  setTimeout(() => { updateSyncStatus(fbReady ? 'connected' : 'offline'); }, 2000);
+  el.textContent = (icon||'') + ' ' + msg;
+  el.className = 'sync-status ' + (syncPendingCount > 0 ? 'uploading' : 'synced');
+  if (syncPendingCount <= 0) {
+    setTimeout(() => { updateSyncStatus(fbReady ? 'connected' : 'offline'); }, 3000);
+  }
 }
-function setSyncUploading() { updateSyncStatus('uploading'); }
-function setSyncDone() { toastSync('上传成功', '☁️✅'); }
+function setSyncUploading() {
+  syncPendingCount++;
+  updateSyncStatus('uploading');
+}
+function setSyncDone() {
+  syncPendingCount = Math.max(0, syncPendingCount - 1);
+  if (syncPendingCount <= 0) {
+    toastSync('同步完成', '☁️✅');
+  }
+}
+function setSyncFailed() {
+  syncPendingCount = Math.max(0, syncPendingCount - 1);
+  const el = document.getElementById('syncStatus');
+  if (el) {
+    el.textContent = '❌ 上传失败';
+    el.className = 'sync-status offline';
+    setTimeout(() => { updateSyncStatus(fbReady ? 'connected' : 'offline'); }, 3000);
+  }
+}
 
 // ---- 本地备用 ----
 let localDB = null;
@@ -2078,14 +2100,22 @@ async function savePhoto(dataUrl) {
   if (useFirebase && fbReady) {
     setSyncUploading();
     const id = 'photo_' + Date.now();
-    await window._fb.addDoc(window._fb.collection(fbDb, 'photos'), {
-      id, data: dataUrl, timestamp: Date.now()
-    });
-    setSyncDone();
+    try {
+      await window._fb.addDoc(window._fb.collection(fbDb, 'photos'), {
+        id, data: dataUrl, timestamp: Date.now()
+      });
+      setSyncDone();
+    } catch(e) {
+      console.warn('照片上传失败:', e.message);
+      setSyncFailed();
+      // Fall back to local
+      await localIDBOp('photos', 'readwrite', store => store.add({ id, data: dataUrl, timestamp: Date.now() }));
+    }
     return { id, data: dataUrl, timestamp: Date.now() };
   }
   const id = 'photo_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
   await localIDBOp('photos', 'readwrite', store => store.add({ id, data: dataUrl, timestamp: Date.now() }));
+  toastSync('已保存到本地', '💾');
   return { id, data: dataUrl, timestamp: Date.now() };
 }
 
@@ -2136,10 +2166,9 @@ async function saveRecording(blob) {
         reader.onloadend = () => resolve(reader.result);
         reader.readAsDataURL(blob);
       });
-      // Check base64 size
-      if (base64.length > 900000) { // ~900KB limit for safety
+      if (base64.length > 900000) {
         console.warn('录音base64过大(' + (base64.length/1024).toFixed(0) + 'KB), 仅本地保存');
-        toastSync('录音仅存本地', '💾');
+        setSyncFailed();
         return { id, data: blob, timestamp: Date.now() };
       }
       await window._fb.addDoc(window._fb.collection(fbDb, 'recordings'), {
@@ -2147,8 +2176,8 @@ async function saveRecording(blob) {
       });
       setSyncDone();
     } catch(e) {
-      console.warn('云端上传失败, 已保存到本地:', e.message);
-      toastSync('已保存到本地', '💾');
+      console.warn('云端上传失败:', e.message);
+      setSyncFailed();
     }
   }
   return { id, data: blob, timestamp: Date.now() };
