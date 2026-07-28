@@ -2139,15 +2139,12 @@ const PRELOADED_PHOTOS = [
 ];
 
 async function renderGallery() {
-  let photos = await loadPhotos();
-
-  // Clear existing items (keep add button)
   const addBtn = document.getElementById('addPhotoBtn');
   galleryGrid.innerHTML = '';
 
-  // Render preloaded photos first (from assets/photos/)
+  // 1. Render preloaded photos FIRST (不依赖任何异步加载)
   PRELOADED_PHOTOS.forEach(filename => {
-    const thumbName = filename.replace(/\.[^.]+$/, '.jpg'); // thumbnail is always .jpg
+    const thumbName = filename.replace(/\.[^.]+$/, '.jpg');
     const thumbSrc = 'assets/photos/thumbnails/' + thumbName;
     const fullSrc = 'assets/photos/' + filename;
     const item = document.createElement('div');
@@ -2160,7 +2157,15 @@ async function renderGallery() {
     galleryGrid.appendChild(item);
   });
 
-  // Render user-added photos from IndexedDB
+  // 2. Load cloud/local photos (Firebase or IndexedDB)
+  let photos = [];
+  try {
+    photos = await loadPhotos();
+  } catch(e) {
+    console.warn('加载云端照片失败:', e.message);
+  }
+
+  // 3. Render user-added photos
   photos.forEach(photo => {
     const item = document.createElement('div');
     item.className = 'gallery-item';
@@ -2182,7 +2187,7 @@ async function renderGallery() {
     galleryGrid.appendChild(item);
   });
 
-  // Add photo button always at the end
+  // 4. Add button always at end
   galleryGrid.appendChild(addBtn);
 }
 
@@ -3012,9 +3017,23 @@ sections.forEach(s => observer.observe(s));
 // 8. INITIALIZATION
 // ============================================================
 async function init() {
-  await initFirebase();
+  // Start Firebase in background with 5s timeout - don't block page
+  const fbPromise = Promise.race([
+    initFirebase(),
+    new Promise(r => setTimeout(() => { useFirebase = false; initLocalFallback(); r(); }, 5000))
+  ]).catch(() => { useFirebase = false; initLocalFallback(); });
+
+  // Render gallery immediately (preloaded photos show right away)
   await renderGallery();
   await renderRecordings();
+
+  // Wait for Firebase to finish in background
+  await fbPromise;
+  // Re-render to show any cloud photos
+  if (fbReady) {
+    await renderGallery();
+    await renderRecordings();
+  }
 }
 
 init();
