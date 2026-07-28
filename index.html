@@ -2114,40 +2114,68 @@ async function deletePhoto(id) {
 
 // ---- 录音 API ----
 async function saveRecording(blob) {
-  // Convert blob to base64 for Firestore storage
-  const base64 = await new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.readAsDataURL(blob);
-  });
-  if (useFirebase && fbReady) {
-    setSyncUploading();
-    const id = 'rec_' + Date.now();
-    await window._fb.addDoc(window._fb.collection(fbDb, 'recordings'), {
-      id, data: base64, timestamp: Date.now()
-    });
-    setSyncDone();
-    return { id, data: blob, timestamp: Date.now() };
+  const sizeMB = blob.size / 1024 / 1024;
+
+  // If blob is too large for Firestore (>800KB base64 ~= 600KB raw), use local only
+  if (sizeMB > 0.6) {
+    console.warn('录音过大 (' + sizeMB.toFixed(1) + 'MB), 仅保存到本地');
   }
+
+  // Save locally first (always works, fast)
   const id = 'rec_' + Date.now();
-  await localIDBOp('recordings', 'readwrite', store => store.add({ id, data: blob, timestamp: Date.now() }));
+  try {
+    await localIDBOp('recordings', 'readwrite', store => store.add({ id, data: blob, timestamp: Date.now() }));
+  } catch(e) { /* local save failed, continue */ }
+
+  // Try cloud sync
+  if (useFirebase && fbReady && sizeMB <= 0.6) {
+    try {
+      setSyncUploading();
+      const base64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+      // Check base64 size
+      if (base64.length > 900000) { // ~900KB limit for safety
+        console.warn('录音base64过大(' + (base64.length/1024).toFixed(0) + 'KB), 仅本地保存');
+        toastSync('录音仅存本地', '💾');
+        return { id, data: blob, timestamp: Date.now() };
+      }
+      await window._fb.addDoc(window._fb.collection(fbDb, 'recordings'), {
+        id, data: base64, timestamp: Date.now()
+      });
+      setSyncDone();
+    } catch(e) {
+      console.warn('云端上传失败, 已保存到本地:', e.message);
+      toastSync('已保存到本地', '💾');
+    }
+  }
   return { id, data: blob, timestamp: Date.now() };
 }
 
 async function loadRecordings() {
   if (useFirebase && fbReady) {
-    const q = window._fb.query(window._fb.collection(fbDb, 'recordings'), window._fb.orderBy('timestamp', 'desc'));
-    const snapshot = await window._fb.getDocs(q);
-    return snapshot.docs.map(d => {
-      const base64 = d.data().data;
-      // Convert base64 back to blob for playback
-      const byteString = atob(base64.split(',')[1]);
-      const mimeType = base64.match(/data:(.*);base64/)[1];
-      const ab = new ArrayBuffer(byteString.length);
-      const ia = new Uint8Array(ab);
-      for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-      return { id: d.data().id, data: new Blob([ab], { type: mimeType }), timestamp: d.data().timestamp };
-    });
+    try {
+      const q = window._fb.query(window._fb.collection(fbDb, 'recordings'), window._fb.orderBy('timestamp', 'desc'));
+      const snapshot = await window._fb.getDocs(q);
+      const cloudRecs = [];
+      snapshot.docs.forEach(d => {
+        try {
+          const base64 = d.data().data;
+          if (!base64 || !base64.includes(';base64,')) return;
+          const byteString = atob(base64.split(',')[1]);
+          const mimeType = base64.match(/data:(.*);base64/)[1];
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+          cloudRecs.push({ id: d.data().id, data: new Blob([ab], { type: mimeType }), timestamp: d.data().timestamp });
+        } catch(e) { /* skip corrupted record */ }
+      });
+      return cloudRecs;
+    } catch(e) {
+      console.warn('云端加载录音失败:', e.message);
+    }
   }
   try {
     const result = await localIDBOp('recordings', 'readonly', store => store.getAll());
