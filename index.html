@@ -1143,6 +1143,35 @@ body {
 .sync-status.uploading { color: #facc15; border-color: rgba(250,204,21,0.3); animation: hintPulse 0.8s ease-in-out infinite; }
 .sync-status.offline { color: rgba(255,255,255,0.4); }
 
+/* === Share Buttons === */
+.share-buttons {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.share-btn {
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-family: var(--font-body);
+  transition: all 0.3s;
+}
+
+.share-btn:hover {
+  background: rgba(255,107,157,0.25);
+  border-color: rgba(255,107,157,0.5);
+  color: #fff;
+}
+
 /* ============ Footer ============ */
 .site-footer {
   text-align: center;
@@ -1326,7 +1355,14 @@ body {
 </nav>
 
 <!-- Sync Status -->
-<div class="sync-status" id="syncStatus" title="同步状态">☁️</div>
+<div class="sync-status" id="syncStatus" title="存储状态">💾 本地存储</div>
+
+<!-- Export/Import -->
+<div class="share-buttons">
+  <button class="share-btn" id="exportBtn" title="导出数据分享给朋友">📤 导出</button>
+  <button class="share-btn" id="importBtn" title="从朋友那里导入数据">📥 导入</button>
+  <input type="file" id="importFile" accept=".json" style="display:none">
+</div>
 
 <footer class="site-footer">✨ 思念如星辰，纵隔山海，依旧闪耀 ✨</footer>
 
@@ -1983,128 +2019,18 @@ heartContainer.addEventListener('click', () => {
 });
 
 // ============================================================
-// 4. FIREBASE SYNC (跨设备同步, 只用免费 Firestore)
+// 4. LOCAL STORAGE + 导出/导入 (跨设备分享)
 // ============================================================
-// ====== 👇 请在这里填入你的 Firebase 配置 👇 ======
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDoCgPXRhQVobQM8hT5JSfN5vQlire6QeE",
-  authDomain: "jiayu-birthday.firebaseapp.com",
-  projectId: "jiayu-birthday",
-  storageBucket: "jiayu-birthday.firebasestorage.app",
-  messagingSenderId: "969981773698",
-  appId: "1:969981773698:web:cc6f57e2537071ff51b19b"
-};
-// ====== 👆 从控制台 → 项目设置 → Web应用 获取 👆 ======
-
-let fbApp = null, fbDb = null;
-let useFirebase = true;
-let fbReady = false;
-
-async function initFirebase() {
-  if (fbReady) return;
-  updateSyncStatus('connecting');
-  try {
-    console.log('[同步] 加载Firebase SDK...');
-    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js');
-    const { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, writeBatch } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js');
-    const { getAuth, signInAnonymously, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js');
-
-    window._fb = { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, writeBatch, getAuth, signInAnonymously, onAuthStateChanged };
-
-    console.log('[同步] 初始化Firebase...');
-    fbApp = initializeApp(FIREBASE_CONFIG);
-    fbDb = window._fb.getFirestore(fbApp);
-    const auth = window._fb.getAuth(fbApp);
-
-    console.log('[同步] 匿名登录中...');
-    await new Promise((resolve, reject) => {
-      const unsub = window._fb.onAuthStateChanged(auth, (user) => {
-        unsub();
-        if (user) { console.log('[同步] 匿名登录成功, uid:', user.uid); resolve(user); }
-      });
-      window._fb.signInAnonymously(auth).catch(err => {
-        console.error('[同步] 匿名登录失败:', err.message, err.code);
-        reject(err);
-      });
-    });
-
-    // Test Firestore write
-    try {
-      console.log('[同步] 测试Firestore写入...');
-      const testRef = window._fb.collection(fbDb, '_test');
-      await window._fb.addDoc(testRef, { ts: Date.now() });
-      console.log('[同步] Firestore写入成功！');
-    } catch(fsErr) {
-      console.error('[同步] Firestore写入失败:', fsErr.message, fsErr.code);
-      throw new Error('Firestore不可写: ' + fsErr.message);
-    }
-
-    fbReady = true;
-    updateSyncStatus('connected');
-    console.log('✅ 云端同步完全就绪');
-  } catch(e) {
-    console.error('[同步] 初始化失败:', e.message);
-    useFirebase = false;
-    initLocalFallback();
-    updateSyncStatus('offline');
-  }
-}
-
-// ---- Sync status indicator ----
-let syncPendingCount = 0; // Track in-flight uploads
-
-function updateSyncStatus(state) {
-  const el = document.getElementById('syncStatus');
-  if (!el) return;
-  el.className = 'sync-status ' + state;
-  if (state === 'connecting') { el.textContent = '☁️ 连接中...'; el.title = '正在连接云端...'; }
-  else if (state === 'connected') { el.textContent = '☁️ 已连接'; el.title = '云端已连接，待上传'; }
-  else if (state === 'synced') { el.textContent = '☁️✅ 同步完成'; el.title = '所有数据已同步到云端'; }
-  else if (state === 'uploading') { el.textContent = '☁️⬆ 上传中...'; el.title = '正在上传到云端...'; }
-  else if (state === 'offline') { el.textContent = '☁️ 离线'; el.title = '使用本地存储，数据不会同步'; }
-}
-function toastSync(msg, icon) {
-  const el = document.getElementById('syncStatus');
-  if (!el) return;
-  el.textContent = (icon||'') + ' ' + msg;
-  el.className = 'sync-status ' + (syncPendingCount > 0 ? 'uploading' : 'synced');
-  if (syncPendingCount <= 0) {
-    setTimeout(() => { updateSyncStatus(fbReady ? 'connected' : 'offline'); }, 3000);
-  }
-}
-function setSyncUploading() {
-  syncPendingCount++;
-  updateSyncStatus('uploading');
-}
-function setSyncDone() {
-  syncPendingCount = Math.max(0, syncPendingCount - 1);
-  if (syncPendingCount <= 0) {
-    toastSync('同步完成', '☁️✅');
-  }
-}
-function setSyncFailed() {
-  syncPendingCount = Math.max(0, syncPendingCount - 1);
-  const el = document.getElementById('syncStatus');
-  if (el) {
-    el.textContent = '❌ 上传失败';
-    el.className = 'sync-status offline';
-    setTimeout(() => { updateSyncStatus(fbReady ? 'connected' : 'offline'); }, 3000);
-  }
-}
-
-// ---- 本地备用 ----
 let localDB = null;
-function initLocalFallback() {
-  const req = indexedDB.open('BirthdayMemorial', 1);
-  req.onupgradeneeded = (e) => {
-    const db = e.target.result;
-    if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', { keyPath: 'id' });
-    if (!db.objectStoreNames.contains('recordings')) db.createObjectStore('recordings', { keyPath: 'id' });
-  };
-  req.onsuccess = () => { localDB = req.result; };
-}
+const req = indexedDB.open('BirthdayMemorial', 1);
+req.onupgradeneeded = (e) => {
+  const db = e.target.result;
+  if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', { keyPath: 'id' });
+  if (!db.objectStoreNames.contains('recordings')) db.createObjectStore('recordings', { keyPath: 'id' });
+};
+req.onsuccess = () => { localDB = req.result; };
 
-function localIDBOp(storeName, mode, op) {
+function idbOp(storeName, mode, op) {
   return new Promise((resolve, reject) => {
     if (!localDB) { reject(new Error('DB not ready')); return; }
     const tx = localDB.transaction(storeName, mode);
@@ -2115,135 +2041,104 @@ function localIDBOp(storeName, mode, op) {
   });
 }
 
-// ---- 照片 API ----
+// ---- 照片 ----
 async function savePhoto(dataUrl) {
-  if (useFirebase && fbReady) {
-    setSyncUploading();
-    const id = 'photo_' + Date.now();
-    try {
-      await window._fb.addDoc(window._fb.collection(fbDb, 'photos'), {
-        id, data: dataUrl, timestamp: Date.now()
-      });
-      setSyncDone();
-    } catch(e) {
-      console.warn('照片上传失败:', e.message);
-      setSyncFailed();
-      // Fall back to local
-      await localIDBOp('photos', 'readwrite', store => store.add({ id, data: dataUrl, timestamp: Date.now() }));
-    }
-    return { id, data: dataUrl, timestamp: Date.now() };
-  }
   const id = 'photo_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-  await localIDBOp('photos', 'readwrite', store => store.add({ id, data: dataUrl, timestamp: Date.now() }));
-  toastSync('已保存到本地', '💾');
+  await idbOp('photos', 'readwrite', store => store.add({ id, data: dataUrl, timestamp: Date.now() }));
+  toastMsg('照片已保存', '📸');
   return { id, data: dataUrl, timestamp: Date.now() };
 }
 
 async function loadPhotos() {
-  if (useFirebase && fbReady) {
-    const q = window._fb.query(window._fb.collection(fbDb, 'photos'), window._fb.orderBy('timestamp', 'desc'));
-    const snapshot = await window._fb.getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.data().id, data: d.data().data, timestamp: d.data().timestamp }));
-  }
   try {
-    const result = await localIDBOp('photos', 'readonly', store => store.getAll());
+    const result = await idbOp('photos', 'readonly', store => store.getAll());
     return (result || []).sort((a, b) => b.timestamp - a.timestamp);
   } catch(e) { return []; }
 }
 
 async function deletePhoto(id) {
-  if (useFirebase && fbReady) {
-    const q = window._fb.query(window._fb.collection(fbDb, 'photos'));
-    const snapshot = await window._fb.getDocs(q);
-    const found = snapshot.docs.find(d => d.data().id === id);
-    if (found) await window._fb.deleteDoc(window._fb.doc(fbDb, 'photos', found.id));
-    return;
-  }
-  await localIDBOp('photos', 'readwrite', store => store.delete(id));
+  await idbOp('photos', 'readwrite', store => store.delete(id));
 }
 
-// ---- 录音 API ----
+// ---- 录音 ----
 async function saveRecording(blob) {
-  const sizeMB = blob.size / 1024 / 1024;
-
-  // If blob is too large for Firestore (>800KB base64 ~= 600KB raw), use local only
-  if (sizeMB > 0.6) {
-    console.warn('录音过大 (' + sizeMB.toFixed(1) + 'MB), 仅保存到本地');
-  }
-
-  // Save locally first (always works, fast)
   const id = 'rec_' + Date.now();
-  try {
-    await localIDBOp('recordings', 'readwrite', store => store.add({ id, data: blob, timestamp: Date.now() }));
-  } catch(e) { /* local save failed, continue */ }
-
-  // Try cloud sync
-  if (useFirebase && fbReady && sizeMB <= 0.6) {
-    try {
-      setSyncUploading();
-      const base64 = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
-      });
-      if (base64.length > 900000) {
-        console.warn('录音base64过大(' + (base64.length/1024).toFixed(0) + 'KB), 仅本地保存');
-        setSyncFailed();
-        return { id, data: blob, timestamp: Date.now() };
-      }
-      await window._fb.addDoc(window._fb.collection(fbDb, 'recordings'), {
-        id, data: base64, timestamp: Date.now()
-      });
-      setSyncDone();
-    } catch(e) {
-      console.warn('云端上传失败:', e.message);
-      setSyncFailed();
-    }
-  }
+  await idbOp('recordings', 'readwrite', store => store.add({ id, data: blob, timestamp: Date.now() }));
+  toastMsg('录音已保存', '🎙️');
   return { id, data: blob, timestamp: Date.now() };
 }
 
 async function loadRecordings() {
-  if (useFirebase && fbReady) {
-    try {
-      const q = window._fb.query(window._fb.collection(fbDb, 'recordings'), window._fb.orderBy('timestamp', 'desc'));
-      const snapshot = await window._fb.getDocs(q);
-      const cloudRecs = [];
-      snapshot.docs.forEach(d => {
-        try {
-          const base64 = d.data().data;
-          if (!base64 || !base64.includes(';base64,')) return;
-          const byteString = atob(base64.split(',')[1]);
-          const mimeType = base64.match(/data:(.*);base64/)[1];
-          const ab = new ArrayBuffer(byteString.length);
-          const ia = new Uint8Array(ab);
-          for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-          cloudRecs.push({ id: d.data().id, data: new Blob([ab], { type: mimeType }), timestamp: d.data().timestamp });
-        } catch(e) { /* skip corrupted record */ }
-      });
-      return cloudRecs;
-    } catch(e) {
-      console.warn('云端加载录音失败:', e.message);
-    }
-  }
   try {
-    const result = await localIDBOp('recordings', 'readonly', store => store.getAll());
+    const result = await idbOp('recordings', 'readonly', store => store.getAll());
     return (result || []).sort((a, b) => b.timestamp - a.timestamp);
   } catch(e) { return []; }
 }
 
 async function deleteRecording(id) {
-  if (useFirebase && fbReady) {
-    const q = window._fb.query(window._fb.collection(fbDb, 'recordings'));
-    const snapshot = await window._fb.getDocs(q);
-    const found = snapshot.docs.find(d => d.data().id === id);
-    if (found) await window._fb.deleteDoc(window._fb.doc(fbDb, 'recordings', found.id));
-    return;
-  }
-  await localIDBOp('recordings', 'readwrite', store => store.delete(id));
+  await idbOp('recordings', 'readwrite', store => store.delete(id));
 }
 
-// ============================================================
+// ---- 导出/导入 ----
+async function exportAllData() {
+  const photos = await loadPhotos();
+  const recordings = await loadRecordings();
+  const recsData = await Promise.all(recordings.map(async r => {
+    const b64 = await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.readAsDataURL(r.data);
+    });
+    return { id: r.id, data: b64, timestamp: r.timestamp };
+  }));
+  const exportObj = { photos, recordings: recsData, exportTime: Date.now() };
+  const blob = new Blob([JSON.stringify(exportObj)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'jiayu-birthday-data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toastMsg('导出成功！发给朋友吧', '📤');
+}
+
+async function importAllData(file) {
+  try {
+    const text = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+    const data = JSON.parse(text);
+    if (data.photos) {
+      for (const p of data.photos) {
+        await idbOp('photos', 'readwrite', store => store.put({ id: p.id, data: p.data, timestamp: p.timestamp }));
+      }
+    }
+    if (data.recordings) {
+      for (const r of data.recordings) {
+        const resp = await fetch(r.data);
+        const blob = await resp.blob();
+        await idbOp('recordings', 'readwrite', store => store.put({ id: r.id, data: blob, timestamp: r.timestamp }));
+      }
+    }
+    toastMsg('导入成功！刷新页面查看', '📥');
+    setTimeout(() => { renderGallery(); renderRecordings(); }, 500);
+  } catch(e) {
+    alert('导入失败：文件格式不正确');
+    console.error(e);
+  }
+}
+
+// ---- Toast ----
+function toastMsg(msg, icon) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  el.textContent = (icon||'') + ' ' + msg;
+  el.className = 'sync-status connected';
+  setTimeout(() => { el.textContent = '💾 本地存储'; el.className = 'sync-status connected'; }, 2000);
+}
+
 // 4. PHOTO GALLERY
 // ============================================================
 const galleryGrid = document.getElementById('galleryGrid');
@@ -3147,26 +3042,20 @@ sections.forEach(s => observer.observe(s));
 // 8. INITIALIZATION
 // ============================================================
 async function init() {
-  // Start Firebase in background with 5s timeout - don't block page
-  const fbPromise = Promise.race([
-    initFirebase(),
-    new Promise(r => setTimeout(() => { useFirebase = false; initLocalFallback(); r(); }, 5000))
-  ]).catch(() => { useFirebase = false; initLocalFallback(); });
-
-  // Render gallery immediately (preloaded photos show right away)
   await renderGallery();
   await renderRecordings();
-
-  // Wait for Firebase to finish in background
-  await fbPromise;
-  // Re-render to show any cloud photos
-  if (fbReady) {
-    await renderGallery();
-    await renderRecordings();
-  }
 }
 
 init();
+
+// Export / Import buttons
+document.getElementById('exportBtn').addEventListener('click', exportAllData);
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change', (e) => {
+  if (e.target.files[0]) importAllData(e.target.files[0]);
+});
 
 // ============================================================
 // 9. BIRTHDAY CONFETTI ON LOAD (optional surprise)
