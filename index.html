@@ -1954,104 +1954,177 @@ heartContainer.addEventListener('click', () => {
 });
 
 // ============================================================
-// 4. INDEXEDDB STORAGE
+// 4. FIREBASE STORAGE (跨设备同步)
 // ============================================================
-const DB_NAME = 'BirthdayMemorial';
-const DB_VERSION = 1;
+// ====== 👇 请在这里填入你的 Firebase 配置 👇 ======
+const FIREBASE_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+// ====== 👆 从 Firebase 控制台 → 项目设置 → 常规 → 您的应用 → Web 应用 获取 👆 ======
 
-function openDB() {
+let fbApp = null, fbDb = null, fbStorage = null;
+let useFirebase = true;
+let fbReady = false;
+
+async function initFirebase() {
+  if (fbReady) return;
+  try {
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js');
+    const { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js');
+    const { getStorage, ref, uploadString, uploadBytes, getDownloadURL, deleteObject } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js');
+    const { getAuth, signInAnonymously, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js');
+
+    // Store globally
+    window._fb = { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp, getStorage, ref, uploadString, uploadBytes, getDownloadURL, deleteObject, getAuth, signInAnonymously, onAuthStateChanged };
+
+    fbApp = initializeApp(FIREBASE_CONFIG);
+    fbDb = window._fb.getFirestore(fbApp);
+    fbStorage = window._fb.getStorage(fbApp);
+    const auth = window._fb.getAuth(fbApp);
+
+    await new Promise((resolve, reject) => {
+      const unsub = window._fb.onAuthStateChanged(auth, (user) => {
+        unsub();
+        if (user) resolve(user);
+      });
+      window._fb.signInAnonymously(auth).catch(reject);
+    });
+
+    fbReady = true;
+    console.log('✅ Firebase connected - 数据将自动同步');
+  } catch(e) {
+    console.warn('Firebase 未配置或加载失败, 使用本地存储:', e.message);
+    useFirebase = false;
+    initLocalFallback();
+  }
+}
+
+// ---- Local fallback (IndexedDB) when Firebase unavailable ----
+let localDB = null;
+function initLocalFallback() {
+  const req = indexedDB.open('BirthdayMemorial', 1);
+  req.onupgradeneeded = (e) => {
+    const db = e.target.result;
+    if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', { keyPath: 'id' });
+    if (!db.objectStoreNames.contains('recordings')) db.createObjectStore('recordings', { keyPath: 'id' });
+  };
+  req.onsuccess = () => { localDB = req.result; };
+}
+
+function localIDBOp(storeName, mode, op) {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains('photos')) {
-        db.createObjectStore('photos', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('recordings')) {
-        db.createObjectStore('recordings', { keyPath: 'id' });
-      }
-    };
+    if (!localDB) { reject(new Error('DB not ready')); return; }
+    const tx = localDB.transaction(storeName, mode);
+    const store = tx.objectStore(storeName);
+    const req = op(store);
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
 
-// Photo operations
+// ---- Unified photo API (Firebase primary, IndexedDB fallback) ----
 async function savePhoto(dataUrl) {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('photos', 'readwrite');
-    const store = tx.objectStore('photos');
-    const photo = {
-      id: 'photo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-      data: dataUrl,
-      timestamp: Date.now()
-    };
-    const req = store.add(photo);
-    req.onsuccess = () => resolve(photo);
-    req.onerror = () => reject(req.error);
-  });
+  if (useFirebase && fbReady) {
+    const id = 'photo_' + Date.now();
+    const base64 = dataUrl.split(',')[1];
+    const storageRef = window._fb.ref(fbStorage, 'photos/' + id + '.jpg');
+    await window._fb.uploadString(storageRef, base64, 'base64', { contentType: 'image/jpeg' });
+    const url = await window._fb.getDownloadURL(storageRef);
+    await window._fb.addDoc(window._fb.collection(fbDb, 'photos'), {
+      id, url, timestamp: Date.now()
+    });
+    return { id, data: url, timestamp: Date.now() };
+  }
+  // Fallback
+  const id = 'photo_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  await localIDBOp('photos', 'readwrite', store => store.add({ id, data: dataUrl, timestamp: Date.now() }));
+  return { id, data: dataUrl, timestamp: Date.now() };
 }
 
 async function loadPhotos() {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('photos', 'readonly');
-    const store = tx.objectStore('photos');
-    const req = store.getAll();
-    req.onsuccess = () => resolve(req.result.sort((a, b) => b.timestamp - a.timestamp));
-    req.onerror = () => reject(req.error);
-  });
+  if (useFirebase && fbReady) {
+    const q = window._fb.query(window._fb.collection(fbDb, 'photos'), window._fb.orderBy('timestamp', 'desc'));
+    const snapshot = await window._fb.getDocs(q);
+    return snapshot.docs.map(d => ({ id: d.data().id, data: d.data().url, timestamp: d.data().timestamp }));
+  }
+  try {
+    const result = await localIDBOp('photos', 'readonly', store => store.getAll());
+    return (result || []).sort((a, b) => b.timestamp - a.timestamp);
+  } catch(e) { return []; }
 }
 
 async function deletePhoto(id) {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('photos', 'readwrite');
-    const store = tx.objectStore('photos');
-    const req = store.delete(id);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+  if (useFirebase && fbReady) {
+    // Delete from Firestore
+    const q = window._fb.query(window._fb.collection(fbDb, 'photos'));
+    const snapshot = await window._fb.getDocs(q);
+    const docToDelete = snapshot.docs.find(d => d.data().id === id);
+    if (docToDelete) await window._fb.deleteDoc(window._fb.doc(fbDb, 'photos', docToDelete.id));
+    // Delete from Storage
+    try {
+      const storageRef = window._fb.ref(fbStorage, 'photos/' + id + '.jpg');
+      await window._fb.deleteObject(storageRef);
+    } catch(e) { /* file may not exist */ }
+    return;
+  }
+  await localIDBOp('photos', 'readwrite', store => store.delete(id));
 }
 
-// Recording operations
+// ---- Unified recording API ----
 async function saveRecording(blob) {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('recordings', 'readwrite');
-    const store = tx.objectStore('recordings');
-    const recording = {
-      id: 'rec_' + Date.now(),
-      data: blob,
-      timestamp: Date.now()
-    };
-    const req = store.add(recording);
-    req.onsuccess = () => resolve(recording);
-    req.onerror = () => reject(req.error);
-  });
+  if (useFirebase && fbReady) {
+    const id = 'rec_' + Date.now();
+    const storageRef = window._fb.ref(fbStorage, 'recordings/' + id + '.webm');
+    await window._fb.uploadBytes(storageRef, blob);
+    const url = await window._fb.getDownloadURL(storageRef);
+    await window._fb.addDoc(window._fb.collection(fbDb, 'recordings'), {
+      id, url, timestamp: Date.now()
+    });
+    // Return a blob URL for immediate playback (fetch the Firebase URL as blob)
+    const resp = await fetch(url);
+    const syncedBlob = await resp.blob();
+    return { id, data: syncedBlob, timestamp: Date.now() };
+  }
+  const id = 'rec_' + Date.now();
+  await localIDBOp('recordings', 'readwrite', store => store.add({ id, data: blob, timestamp: Date.now() }));
+  return { id, data: blob, timestamp: Date.now() };
 }
 
 async function loadRecordings() {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('recordings', 'readonly');
-    const store = tx.objectStore('recordings');
-    const req = store.getAll();
-    req.onsuccess = () => resolve(req.result.sort((a, b) => b.timestamp - a.timestamp));
-    req.onerror = () => reject(req.error);
-  });
+  if (useFirebase && fbReady) {
+    const q = window._fb.query(window._fb.collection(fbDb, 'recordings'), window._fb.orderBy('timestamp', 'desc'));
+    const snapshot = await window._fb.getDocs(q);
+    const recordings = await Promise.all(snapshot.docs.map(async d => {
+      const resp = await fetch(d.data().url);
+      const blob = await resp.blob();
+      return { id: d.data().id, data: blob, timestamp: d.data().timestamp };
+    }));
+    return recordings;
+  }
+  try {
+    const result = await localIDBOp('recordings', 'readonly', store => store.getAll());
+    return (result || []).sort((a, b) => b.timestamp - a.timestamp);
+  } catch(e) { return []; }
 }
 
 async function deleteRecording(id) {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('recordings', 'readwrite');
-    const store = tx.objectStore('recordings');
-    const req = store.delete(id);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+  if (useFirebase && fbReady) {
+    const q = window._fb.query(window._fb.collection(fbDb, 'recordings'));
+    const snapshot = await window._fb.getDocs(q);
+    const docToDelete = snapshot.docs.find(d => d.data().id === id);
+    if (docToDelete) await window._fb.deleteDoc(window._fb.doc(fbDb, 'recordings', docToDelete.id));
+    try {
+      const storageRef = window._fb.ref(fbStorage, 'recordings/' + id + '.webm');
+      await window._fb.deleteObject(storageRef);
+    } catch(e) {}
+    return;
+  }
+  await localIDBOp('recordings', 'readwrite', store => store.delete(id));
 }
 
 // ============================================================
@@ -2953,6 +3026,7 @@ sections.forEach(s => observer.observe(s));
 // 8. INITIALIZATION
 // ============================================================
 async function init() {
+  await initFirebase();
   await renderGallery();
   await renderRecordings();
 }
