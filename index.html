@@ -1954,7 +1954,7 @@ heartContainer.addEventListener('click', () => {
 });
 
 // ============================================================
-// 4. FIREBASE STORAGE (跨设备同步)
+// 4. FIREBASE SYNC (跨设备同步, 只用免费 Firestore)
 // ============================================================
 // ====== 👇 请在这里填入你的 Firebase 配置 👇 ======
 const FIREBASE_CONFIG = {
@@ -1965,9 +1965,9 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "YOUR_SENDER_ID",
   appId: "YOUR_APP_ID"
 };
-// ====== 👆 从 Firebase 控制台 → 项目设置 → 常规 → 您的应用 → Web 应用 获取 👆 ======
+// ====== 👆 从控制台 → 项目设置 → Web应用 获取 👆 ======
 
-let fbApp = null, fbDb = null, fbStorage = null;
+let fbApp = null, fbDb = null;
 let useFirebase = true;
 let fbReady = false;
 
@@ -1975,16 +1975,13 @@ async function initFirebase() {
   if (fbReady) return;
   try {
     const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js');
-    const { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js');
-    const { getStorage, ref, uploadString, uploadBytes, getDownloadURL, deleteObject } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js');
+    const { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, writeBatch } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js');
     const { getAuth, signInAnonymously, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js');
 
-    // Store globally
-    window._fb = { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp, getStorage, ref, uploadString, uploadBytes, getDownloadURL, deleteObject, getAuth, signInAnonymously, onAuthStateChanged };
+    window._fb = { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, writeBatch, getAuth, signInAnonymously, onAuthStateChanged };
 
     fbApp = initializeApp(FIREBASE_CONFIG);
     fbDb = window._fb.getFirestore(fbApp);
-    fbStorage = window._fb.getStorage(fbApp);
     const auth = window._fb.getAuth(fbApp);
 
     await new Promise((resolve, reject) => {
@@ -1996,15 +1993,15 @@ async function initFirebase() {
     });
 
     fbReady = true;
-    console.log('✅ Firebase connected - 数据将自动同步');
+    console.log('✅ 云端同步已连接');
   } catch(e) {
-    console.warn('Firebase 未配置或加载失败, 使用本地存储:', e.message);
+    console.warn('云端未配置, 使用本地存储');
     useFirebase = false;
     initLocalFallback();
   }
 }
 
-// ---- Local fallback (IndexedDB) when Firebase unavailable ----
+// ---- 本地备用 ----
 let localDB = null;
 function initLocalFallback() {
   const req = indexedDB.open('BirthdayMemorial', 1);
@@ -2027,20 +2024,15 @@ function localIDBOp(storeName, mode, op) {
   });
 }
 
-// ---- Unified photo API (Firebase primary, IndexedDB fallback) ----
+// ---- 照片 API ----
 async function savePhoto(dataUrl) {
   if (useFirebase && fbReady) {
     const id = 'photo_' + Date.now();
-    const base64 = dataUrl.split(',')[1];
-    const storageRef = window._fb.ref(fbStorage, 'photos/' + id + '.jpg');
-    await window._fb.uploadString(storageRef, base64, 'base64', { contentType: 'image/jpeg' });
-    const url = await window._fb.getDownloadURL(storageRef);
     await window._fb.addDoc(window._fb.collection(fbDb, 'photos'), {
-      id, url, timestamp: Date.now()
+      id, data: dataUrl, timestamp: Date.now()
     });
-    return { id, data: url, timestamp: Date.now() };
+    return { id, data: dataUrl, timestamp: Date.now() };
   }
-  // Fallback
   const id = 'photo_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
   await localIDBOp('photos', 'readwrite', store => store.add({ id, data: dataUrl, timestamp: Date.now() }));
   return { id, data: dataUrl, timestamp: Date.now() };
@@ -2050,7 +2042,7 @@ async function loadPhotos() {
   if (useFirebase && fbReady) {
     const q = window._fb.query(window._fb.collection(fbDb, 'photos'), window._fb.orderBy('timestamp', 'desc'));
     const snapshot = await window._fb.getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.data().id, data: d.data().url, timestamp: d.data().timestamp }));
+    return snapshot.docs.map(d => ({ id: d.data().id, data: d.data().data, timestamp: d.data().timestamp }));
   }
   try {
     const result = await localIDBOp('photos', 'readonly', store => store.getAll());
@@ -2060,35 +2052,29 @@ async function loadPhotos() {
 
 async function deletePhoto(id) {
   if (useFirebase && fbReady) {
-    // Delete from Firestore
     const q = window._fb.query(window._fb.collection(fbDb, 'photos'));
     const snapshot = await window._fb.getDocs(q);
-    const docToDelete = snapshot.docs.find(d => d.data().id === id);
-    if (docToDelete) await window._fb.deleteDoc(window._fb.doc(fbDb, 'photos', docToDelete.id));
-    // Delete from Storage
-    try {
-      const storageRef = window._fb.ref(fbStorage, 'photos/' + id + '.jpg');
-      await window._fb.deleteObject(storageRef);
-    } catch(e) { /* file may not exist */ }
+    const found = snapshot.docs.find(d => d.data().id === id);
+    if (found) await window._fb.deleteDoc(window._fb.doc(fbDb, 'photos', found.id));
     return;
   }
   await localIDBOp('photos', 'readwrite', store => store.delete(id));
 }
 
-// ---- Unified recording API ----
+// ---- 录音 API ----
 async function saveRecording(blob) {
+  // Convert blob to base64 for Firestore storage
+  const base64 = await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
   if (useFirebase && fbReady) {
     const id = 'rec_' + Date.now();
-    const storageRef = window._fb.ref(fbStorage, 'recordings/' + id + '.webm');
-    await window._fb.uploadBytes(storageRef, blob);
-    const url = await window._fb.getDownloadURL(storageRef);
     await window._fb.addDoc(window._fb.collection(fbDb, 'recordings'), {
-      id, url, timestamp: Date.now()
+      id, data: base64, timestamp: Date.now()
     });
-    // Return a blob URL for immediate playback (fetch the Firebase URL as blob)
-    const resp = await fetch(url);
-    const syncedBlob = await resp.blob();
-    return { id, data: syncedBlob, timestamp: Date.now() };
+    return { id, data: blob, timestamp: Date.now() };
   }
   const id = 'rec_' + Date.now();
   await localIDBOp('recordings', 'readwrite', store => store.add({ id, data: blob, timestamp: Date.now() }));
@@ -2099,12 +2085,16 @@ async function loadRecordings() {
   if (useFirebase && fbReady) {
     const q = window._fb.query(window._fb.collection(fbDb, 'recordings'), window._fb.orderBy('timestamp', 'desc'));
     const snapshot = await window._fb.getDocs(q);
-    const recordings = await Promise.all(snapshot.docs.map(async d => {
-      const resp = await fetch(d.data().url);
-      const blob = await resp.blob();
-      return { id: d.data().id, data: blob, timestamp: d.data().timestamp };
-    }));
-    return recordings;
+    return snapshot.docs.map(d => {
+      const base64 = d.data().data;
+      // Convert base64 back to blob for playback
+      const byteString = atob(base64.split(',')[1]);
+      const mimeType = base64.match(/data:(.*);base64/)[1];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+      return { id: d.data().id, data: new Blob([ab], { type: mimeType }), timestamp: d.data().timestamp };
+    });
   }
   try {
     const result = await localIDBOp('recordings', 'readonly', store => store.getAll());
@@ -2116,12 +2106,8 @@ async function deleteRecording(id) {
   if (useFirebase && fbReady) {
     const q = window._fb.query(window._fb.collection(fbDb, 'recordings'));
     const snapshot = await window._fb.getDocs(q);
-    const docToDelete = snapshot.docs.find(d => d.data().id === id);
-    if (docToDelete) await window._fb.deleteDoc(window._fb.doc(fbDb, 'recordings', docToDelete.id));
-    try {
-      const storageRef = window._fb.ref(fbStorage, 'recordings/' + id + '.webm');
-      await window._fb.deleteObject(storageRef);
-    } catch(e) {}
+    const found = snapshot.docs.find(d => d.data().id === id);
+    if (found) await window._fb.deleteDoc(window._fb.doc(fbDb, 'recordings', found.id));
     return;
   }
   await localIDBOp('recordings', 'readwrite', store => store.delete(id));
