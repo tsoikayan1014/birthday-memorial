@@ -2040,8 +2040,15 @@ function updateSyncStatus(state) {
   else if (state === 'uploading') { el.textContent = '☁️ 上传中...'; el.title = '正在上传到云端'; }
   else if (state === 'offline') { el.textContent = '☁️ 离线'; el.title = '使用本地存储，数据不会同步'; }
 }
+function toastSync(msg, icon) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  el.textContent = (icon||'✅') + ' ' + msg;
+  el.className = 'sync-status connected';
+  setTimeout(() => { updateSyncStatus(fbReady ? 'connected' : 'offline'); }, 2000);
+}
 function setSyncUploading() { updateSyncStatus('uploading'); }
-function setSyncDone() { updateSyncStatus('connected'); }
+function setSyncDone() { toastSync('上传成功', '☁️✅'); }
 
 // ---- 本地备用 ----
 let localDB = null;
