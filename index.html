@@ -1138,6 +1138,7 @@ body {
   gap: 0.4rem;
 }
 
+.sync-status.connecting { color: #facc15; border-color: rgba(250,204,21,0.3); animation: hintPulse 0.5s ease-in-out infinite; }
 .sync-status.connected { color: #4ade80; border-color: rgba(74,222,128,0.3); }
 .sync-status.uploading { color: #facc15; border-color: rgba(250,204,21,0.3); animation: hintPulse 0.8s ease-in-out infinite; }
 .sync-status.offline { color: rgba(255,255,255,0.4); }
@@ -2001,30 +2002,48 @@ let fbReady = false;
 
 async function initFirebase() {
   if (fbReady) return;
+  updateSyncStatus('connecting');
   try {
+    console.log('[同步] 加载Firebase SDK...');
     const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js');
     const { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, writeBatch } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js');
     const { getAuth, signInAnonymously, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js');
 
     window._fb = { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, writeBatch, getAuth, signInAnonymously, onAuthStateChanged };
 
+    console.log('[同步] 初始化Firebase...');
     fbApp = initializeApp(FIREBASE_CONFIG);
     fbDb = window._fb.getFirestore(fbApp);
     const auth = window._fb.getAuth(fbApp);
 
+    console.log('[同步] 匿名登录中...');
     await new Promise((resolve, reject) => {
       const unsub = window._fb.onAuthStateChanged(auth, (user) => {
         unsub();
-        if (user) resolve(user);
+        if (user) { console.log('[同步] 匿名登录成功, uid:', user.uid); resolve(user); }
       });
-      window._fb.signInAnonymously(auth).catch(reject);
+      window._fb.signInAnonymously(auth).catch(err => {
+        console.error('[同步] 匿名登录失败:', err.message, err.code);
+        reject(err);
+      });
     });
+
+    // Test Firestore write
+    try {
+      console.log('[同步] 测试Firestore写入...');
+      const testRef = window._fb.collection(fbDb, '_test');
+      await window._fb.addDoc(testRef, { ts: Date.now() });
+      console.log('[同步] Firestore写入成功！');
+    } catch(fsErr) {
+      console.error('[同步] Firestore写入失败:', fsErr.message, fsErr.code);
+      throw new Error('Firestore不可写: ' + fsErr.message);
+    }
 
     fbReady = true;
     updateSyncStatus('connected');
-    console.log('✅ 云端同步已连接');
+    console.log('✅ 云端同步完全就绪');
   } catch(e) {
-    console.warn('云端未配置, 使用本地存储');
+    console.error('[同步] 初始化失败:', e.message);
     useFirebase = false;
     initLocalFallback();
     updateSyncStatus('offline');
@@ -2038,7 +2057,8 @@ function updateSyncStatus(state) {
   const el = document.getElementById('syncStatus');
   if (!el) return;
   el.className = 'sync-status ' + state;
-  if (state === 'connected') { el.textContent = '☁️ 已连接'; el.title = '云端已连接，待上传'; }
+  if (state === 'connecting') { el.textContent = '☁️ 连接中...'; el.title = '正在连接云端...'; }
+  else if (state === 'connected') { el.textContent = '☁️ 已连接'; el.title = '云端已连接，待上传'; }
   else if (state === 'synced') { el.textContent = '☁️✅ 同步完成'; el.title = '所有数据已同步到云端'; }
   else if (state === 'uploading') { el.textContent = '☁️⬆ 上传中...'; el.title = '正在上传到云端...'; }
   else if (state === 'offline') { el.textContent = '☁️ 离线'; el.title = '使用本地存储，数据不会同步'; }
