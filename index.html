@@ -422,7 +422,90 @@ body {
   font-size: 0.85rem;
   color: rgba(255,255,255,0.4);
   margin-top: 1.5rem;
+  margin-bottom: 0.8rem;
   animation: fadeInUp 1.5s ease-out 0.9s both, hintPulse 2s ease-in-out 2.5s infinite;
+}
+
+/* === Gesture Zone on Hero === */
+.gesture-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  animation: fadeInUp 1.5s ease-out 1.0s both;
+}
+
+.gesture-trigger {
+  padding: 0.7rem 2rem;
+  border-radius: 30px;
+  background: rgba(255,107,157,0.15);
+  border: 1px solid rgba(255,107,157,0.3);
+  color: rgba(255,255,255,0.8);
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.3s;
+  backdrop-filter: blur(5px);
+}
+
+.gesture-trigger:hover {
+  background: rgba(255,107,157,0.3);
+  border-color: rgba(255,107,157,0.6);
+  box-shadow: 0 0 20px rgba(255,107,157,0.3);
+}
+
+.gesture-trigger.active {
+  background: rgba(255,107,157,0.4);
+  border-color: #ff6b9d;
+  animation: hintPulse 1.5s ease-in-out infinite;
+}
+
+.gesture-mini-cam {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  border: 2px solid rgba(255,107,157,0.3);
+  background: #000;
+  display: none;
+  box-shadow: 0 0 25px rgba(255,107,157,0.2);
+}
+
+.gesture-mini-cam.active {
+  display: block;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.gesture-mini-cam video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.gesture-progress-ring {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+
+.gesture-progress-ring svg {
+  width: 100%; height: 100%;
+}
+
+.gesture-mini-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.8);
+  background: rgba(0,0,0,0.6);
+  padding: 2px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 @keyframes hintPulse {
@@ -913,107 +996,98 @@ body {
   pointer-events: none;
 }
 
-/* ============ Message Bubbles Section ============ */
-.bubbles-container {
+/* ============ Chat Popup Messages ============ */
+.chat-popup-trigger {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: clamp(0.8rem, 2vw, 1.5rem);
-  width: 100%;
-  max-width: 700px;
-  perspective: 800px;
 }
 
-.bubble {
-  width: clamp(80px, 18vw, 120px);
-  height: clamp(80px, 18vw, 120px);
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, rgba(255,107,157,0.3), rgba(196,69,105,0.2));
-  border: 2px solid rgba(255,107,157,0.25);
+.chat-launch-btn {
+  padding: 1rem 3rem;
+  border-radius: 40px;
+  background: linear-gradient(135deg, #ff6b9d, #c44569);
+  border: none;
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.3s;
+  box-shadow: 0 0 30px rgba(255,107,157,0.3);
+  animation: hintPulse 2s ease-in-out infinite;
+}
+
+.chat-launch-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 50px rgba(255,107,157,0.5);
+}
+
+/* Full-screen chat overlay */
+.chat-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 250;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: transform 0.3s ease, border-color 0.3s;
-  animation: bubbleFloat 5s ease-in-out infinite;
-  position: relative;
-  will-change: transform;
-  box-shadow: 0 0 15px rgba(255,107,157,0.1);
-}
-
-.bubble:nth-child(1) { animation-delay: 0s; }
-.bubble:nth-child(2) { animation-delay: 0.6s; }
-.bubble:nth-child(3) { animation-delay: 1.2s; }
-.bubble:nth-child(4) { animation-delay: 1.8s; }
-.bubble:nth-child(5) { animation-delay: 0.3s; }
-.bubble:nth-child(6) { animation-delay: 0.9s; }
-.bubble:nth-child(7) { animation-delay: 1.5s; }
-.bubble:nth-child(8) { animation-delay: 2.1s; }
-
-.bubble span {
-  font-size: clamp(1.5rem, 4vw, 2.2rem);
-  transition: transform 0.3s;
-}
-
-.bubble:hover {
-  transform: translateY(-6px) scale(1.08);
-  border-color: rgba(255,107,157,0.6);
-}
-
-.bubble:hover span {
-  transform: scale(1.15);
-}
-
-.bubble:active, .bubble.popping {
-  transform: scale(1.3);
-  border-color: rgba(255,107,157,1);
-  box-shadow: 0 0 40px rgba(255,107,157,0.5);
-}
-
-@keyframes bubbleFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-/* Bubble reveal overlay */
-.bubble-reveal {
-  position: fixed;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  z-index: 250;
-  text-align: center;
   pointer-events: none;
-  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 0;
+  transition: opacity 0.4s;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
 }
 
-.bubble-reveal.active {
-  transform: translate(-50%, -50%) scale(1);
+.chat-overlay.active {
+  opacity: 1;
+  pointer-events: all;
 }
 
-.bubble-reveal-text {
+.chat-card {
+  text-align: center;
+  padding: 2rem;
+  max-width: 90vw;
+  animation: chatSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  z-index: 252;
+}
+
+.chat-emoji {
+  display: block;
+  font-size: clamp(3rem, 8vw, 5rem);
+  margin-bottom: 1rem;
+  animation: chatEmojiBounce 0.6s ease-out;
+}
+
+@keyframes chatEmojiBounce {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.chat-text {
   font-family: var(--font-cursive);
-  font-size: clamp(1.8rem, 5vw, 3rem);
+  font-size: clamp(1.5rem, 5vw, 2.8rem);
   color: #fff;
-  text-shadow: 0 0 30px rgba(255,107,157,0.8), 0 0 60px rgba(255,107,157,0.4), 0 0 90px rgba(255,184,208,0.3);
-  background: rgba(10,10,30,0.85);
-  backdrop-filter: blur(20px);
-  padding: 2rem 3rem;
+  text-shadow: 0 0 30px rgba(255,107,157,0.8), 0 0 60px rgba(255,107,157,0.4), 0 0 100px rgba(255,184,208,0.3);
+  line-height: 1.8;
+  background: rgba(10,10,30,0.7);
+  backdrop-filter: blur(15px);
+  padding: 2rem 2.5rem;
   border-radius: 24px;
-  border: 1px solid rgba(255,107,157,0.4);
-  animation: revealGlow 2s ease-in-out infinite;
+  border: 1px solid rgba(255,107,157,0.3);
 }
 
-@keyframes revealGlow {
-  0%, 100% { box-shadow: 0 0 30px rgba(255,107,157,0.3); }
-  50% { box-shadow: 0 0 60px rgba(255,107,157,0.6); }
+@keyframes chatSlideIn {
+  0% { transform: translateY(40px) scale(0.9); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-.bubble-reveal-particles {
+.chat-particles {
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
   pointer-events: none;
-  z-index: 249;
+  z-index: 251;
 }
 
 /* ============ Navigation Dots ============ */
@@ -1109,8 +1183,17 @@ body {
             fill="url(#heartGrad)" filter="url(#heartGlow)"/>
     </svg>
   </div>
-  <p class="heart-hint">💛 点击爱心，或打开摄像头用手势打开</p>
-  <p class="gesture-hint" id="gestureHint">🖐️ 在摄像头前张开手掌，爱心将为你打开</p>
+  <p class="heart-hint">💛 点击爱心，听听我想对你说的话</p>
+  <div class="gesture-zone" id="gestureZone">
+    <button class="gesture-trigger" id="gestureTrigger">🖐️ 张开手掌打开爱心</button>
+    <div class="gesture-mini-cam" id="gestureMiniCam">
+      <video id="gestureVideo" autoplay playsinline muted></video>
+      <div class="gesture-progress-ring" id="gestureProgressRing">
+        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,107,157,0.3)" stroke-width="6"/><circle cx="50" cy="50" r="45" fill="none" stroke="#ff6b9d" stroke-width="6" stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round" id="gestureRingCircle"/></svg>
+      </div>
+      <span class="gesture-mini-hint" id="gestureMiniHint">张开手掌</span>
+    </div>
+  </div>
 </section>
 
 <!-- ============ Message Modal ============ -->
@@ -1198,23 +1281,21 @@ body {
 
 <!-- ============ Messages Section ============ -->
 <section id="messages" class="section">
-  <h2 class="section-title">💌 我想对你说</h2>
-  <p class="section-desc">点击气泡，听听我的心声</p>
-  <div class="bubbles-container" id="bubblesContainer">
-    <div class="bubble" data-msg="我好想你，每一天都在想"><span>💭</span></div>
-    <div class="bubble" data-msg="我们永远是彼此最重要的人"><span>💎</span></div>
-    <div class="bubble" data-msg="谢谢你出现在我的生命里"><span>🌟</span></div>
-    <div class="bubble" data-msg="不管多远，你都在我心里"><span>🌙</span></div>
-    <div class="bubble" data-msg="希望你每天都开心快乐"><span>🌻</span></div>
-    <div class="bubble" data-msg="你是最特别的存在"><span>🦋</span></div>
-    <div class="bubble" data-msg="我们的友谊永远不变"><span>🤝</span></div>
-    <div class="bubble" data-msg="生日快乐，我最珍贵的宝藏"><span>🎂</span></div>
-  </div>
-  <div class="bubble-reveal" id="bubbleReveal">
-    <p class="bubble-reveal-text" id="bubbleRevealText"></p>
-    <div class="bubble-reveal-particles" id="bubbleRevealParticles"></div>
+  <h2 class="section-title">💬 想对你说的话</h2>
+  <p class="section-desc">点击下方按钮，让心里话飘向你</p>
+  <div class="chat-popup-trigger">
+    <button id="chatPopupBtn" class="chat-launch-btn">💌 点我看心里话</button>
   </div>
 </section>
+
+<!-- Full-screen chat popup overlay -->
+<div class="chat-overlay" id="chatOverlay">
+  <div class="chat-card" id="chatCard">
+    <span class="chat-emoji" id="chatEmoji"></span>
+    <p class="chat-text" id="chatText"></p>
+  </div>
+  <div class="chat-particles" id="chatParticles"></div>
+</div>
 
 <!-- Navigation Dots -->
 <nav class="nav-dots" id="navDots">
@@ -2690,81 +2771,250 @@ cameraCaptureBtn.addEventListener('click', capturePhoto);
 cameraStopBtn.addEventListener('click', stopCamera);
 
 // ============================================================
-// 7. INTERACTIVE MESSAGE BUBBLES
+// 7. HERO GESTURE CAMERA (首页手势打开爱心)
 // ============================================================
-const bubblesContainer = document.getElementById('bubblesContainer');
-const bubbleReveal = document.getElementById('bubbleReveal');
-const bubbleRevealText = document.getElementById('bubbleRevealText');
-const bubbleRevealParticles = document.getElementById('bubbleRevealParticles');
-let bubbleRevealTimeout = null;
+const gestureTrigger = document.getElementById('gestureTrigger');
+const gestureMiniCam = document.getElementById('gestureMiniCam');
+const gestureVideo = document.getElementById('gestureVideo');
+const gestureRingCircle = document.getElementById('gestureRingCircle');
+const gestureMiniHint = document.getElementById('gestureMiniHint');
+const RING_CIRCUMFERENCE = 283; // 2*PI*45 ≈ 283
 
-bubblesContainer.addEventListener('click', (e) => {
-  const bubble = e.target.closest('.bubble');
-  if (!bubble) return;
+let heroGestureStream = null;
+let heroGestureInterval = null;
+let heroOpenPalmFrames = 0;
+const HERO_GESTURE_THRESHOLD = 20;
 
-  const msg = bubble.dataset.msg;
-  if (!msg) return;
+async function startHeroGesture() {
+  try {
+    heroGestureStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: false
+    });
+    gestureVideo.srcObject = heroGestureStream;
+    gestureMiniCam.classList.add('active');
+    gestureTrigger.classList.add('active');
+    gestureTrigger.textContent = '🖐️ 正在检测手势...';
+    heroOpenPalmFrames = 0;
+    gestureRingCircle.style.strokeDashoffset = RING_CIRCUMFERENCE;
+    gestureMiniHint.textContent = '张开手掌';
 
-  // Pop animation on bubble
-  bubble.classList.add('popping');
-  setTimeout(() => bubble.classList.remove('popping'), 400);
+    // Init MediaPipe if needed
+    if (window.initMediaPipe) {
+      const ready = await window.initMediaPipe();
+      if (ready) {
+        heroGestureInterval = setInterval(detectHeroGesture, 200);
+      }
+    }
+  } catch (err) {
+    alert('无法打开摄像头，请检查浏览器权限。');
+    console.error('Hero gesture camera error:', err);
+    gestureTrigger.classList.remove('active');
+    gestureTrigger.textContent = '🖐️ 张开手掌打开爱心';
+  }
+}
 
-  // Show revealed message
-  clearTimeout(bubbleRevealTimeout);
-  bubbleRevealText.textContent = msg;
-  bubbleReveal.classList.add('active');
+function stopHeroGesture() {
+  if (heroGestureInterval) { clearInterval(heroGestureInterval); heroGestureInterval = null; }
+  if (heroGestureStream) {
+    heroGestureStream.getTracks().forEach(t => t.stop());
+    heroGestureStream = null;
+  }
+  gestureVideo.srcObject = null;
+  gestureMiniCam.classList.remove('active');
+  gestureTrigger.classList.remove('active');
+  gestureTrigger.textContent = '🖐️ 张开手掌打开爱心';
+  heroOpenPalmFrames = 0;
+}
 
-  // Spawn particles around the reveal
-  spawnRevealParticles(bubbleRevealParticles);
+function detectHeroGesture() {
+  if (!window.isMediaPipeReady || !window.isMediaPipeReady()) return;
+  if (!heroGestureStream || gestureVideo.readyState < 2) return;
+  const handLandmarker = window.handLandmarker;
+  if (!handLandmarker) return;
 
-  // Auto-hide after 3.5 seconds
-  bubbleRevealTimeout = setTimeout(() => {
-    bubbleReveal.classList.remove('active');
-  }, 3500);
+  try {
+    const result = handLandmarker.detectForVideo(gestureVideo, performance.now());
 
-  // Click anywhere to dismiss early
-  const dismiss = () => {
-    bubbleReveal.classList.remove('active');
-    clearTimeout(bubbleRevealTimeout);
-    document.removeEventListener('click', dismiss);
-  };
-  setTimeout(() => document.addEventListener('click', dismiss), 100);
+    if (result.landmarks && result.landmarks.length >= 1) {
+      let openPalms = 0;
+      result.landmarks.forEach(lm => {
+        if (isOpenPalm(lm)) openPalms++;
+      });
+
+      if (openPalms >= 1) {
+        heroOpenPalmFrames++;
+        const pct = Math.min(100, Math.round((heroOpenPalmFrames / HERO_GESTURE_THRESHOLD) * 100));
+        const offset = RING_CIRCUMFERENCE - (RING_CIRCUMFERENCE * pct / 100);
+        gestureRingCircle.style.strokeDashoffset = offset;
+        gestureMiniHint.textContent = pct >= 80 ? '快好了！' : pct >= 40 ? '保持住！' : '张开手掌';
+        gestureTrigger.textContent = `🖐️ 检测中... ${pct}%`;
+
+        if (heroOpenPalmFrames >= HERO_GESTURE_THRESHOLD) {
+          gestureMiniHint.textContent = '💖 打开了！';
+          heroOpenPalmFrames = 0;
+          stopHeroGesture();
+          openHeartWithGesture();
+        }
+      } else {
+        heroOpenPalmFrames = Math.max(0, heroOpenPalmFrames - 2);
+        const pct = Math.min(100, Math.round((heroOpenPalmFrames / HERO_GESTURE_THRESHOLD) * 100));
+        const offset = RING_CIRCUMFERENCE - (RING_CIRCUMFERENCE * pct / 100);
+        gestureRingCircle.style.strokeDashoffset = offset;
+        gestureMiniHint.textContent = '张开手掌';
+      }
+    } else {
+      heroOpenPalmFrames = Math.max(0, heroOpenPalmFrames - 1);
+      const pct = Math.min(100, Math.round((heroOpenPalmFrames / HERO_GESTURE_THRESHOLD) * 100));
+      const offset = RING_CIRCUMFERENCE - (RING_CIRCUMFERENCE * pct / 100);
+      gestureRingCircle.style.strokeDashoffset = offset;
+    }
+  } catch(e) {}
+}
+
+gestureTrigger.addEventListener('click', () => {
+  if (heroGestureStream) {
+    stopHeroGesture();
+  } else {
+    startHeroGesture();
+  }
 });
 
-function spawnRevealParticles(container) {
-  const emojis = ['💕', '✨', '💫', '💖', '🌟', '💗'];
-  const cx = window.innerWidth / 2;
-  const cy = window.innerHeight / 2;
+// ============================================================
+// 7. CHAT POPUP MESSAGES (全屏弹出式)
+// ============================================================
+const ALL_MESSAGES = [
+  // 想念
+  { emoji: '💕', text: '我好想你，每一天都在想' },
+  { emoji: '💌', text: '我们永远是彼此最重要的人' },
+  { emoji: '🌙', text: '不管多远，你都在我心里' },
+  { emoji: '💎', text: '谢谢你出现在我的生命里' },
+  // 夸奖
+  { emoji: '✨', text: '你笑起来真好看，像春天的花一样' },
+  { emoji: '🌟', text: '你是我见过最善良、最温暖的人' },
+  { emoji: '👑', text: '你值得这世界所有的美好' },
+  { emoji: '🌈', text: '认识你，是我这辈子最幸运的事' },
+  { emoji: '🦋', text: '你的存在让这个世界变得更美好了' },
+  // 鼓励
+  { emoji: '💪', text: '加油！你是最棒的，没有什么能难倒你' },
+  { emoji: '🔥', text: '无论遇到什么困难，你都能克服' },
+  { emoji: '🎯', text: '相信自己，你已经做得很好了' },
+  { emoji: '🌻', text: '希望你每天都开心快乐，做最好的自己' },
+  // 暖心
+  { emoji: '🎂', text: '生日快乐，我最珍贵的宝藏' },
+  { emoji: '🤝', text: '我们的友谊永远不变，永远在一起' },
+  { emoji: '💖', text: '有你在的世界，就是最好的世界' },
+  { emoji: '🏠', text: '不管走多远，我这里永远是你的港湾' },
+  { emoji: '🎁', text: '你是上天给我最好的礼物' },
+];
 
-  for (let i = 0; i < 15; i++) {
+const chatOverlay = document.getElementById('chatOverlay');
+const chatCard = document.getElementById('chatCard');
+const chatText = document.getElementById('chatText');
+const chatEmoji = document.getElementById('chatEmoji');
+const chatParticles = document.getElementById('chatParticles');
+const chatPopupBtn = document.getElementById('chatPopupBtn');
+
+let chatIndex = -1;
+let chatTimer = null;
+let chatActive = false;
+
+function shuffleMessages() {
+  const arr = [...ALL_MESSAGES];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+let shuffledMessages = shuffleMessages();
+
+function showNextChat() {
+  if (chatActive) return;
+
+  chatIndex++;
+  if (chatIndex >= shuffledMessages.length) {
+    shuffledMessages = shuffleMessages();
+    chatIndex = 0;
+  }
+
+  const msg = shuffledMessages[chatIndex];
+  chatEmoji.textContent = msg.emoji;
+  chatText.textContent = msg.text;
+  chatOverlay.classList.add('active');
+  chatActive = true;
+
+  // Spawn particles
+  spawnChatParticles();
+
+  // Auto-dismiss after 4 seconds
+  chatTimer = setTimeout(() => {
+    dismissChat();
+  }, 4000);
+}
+
+function dismissChat() {
+  clearTimeout(chatTimer);
+  chatOverlay.classList.remove('active');
+  chatActive = false;
+}
+
+function spawnChatParticles() {
+  const emojis = ['💕','✨','💫','💖','🌟','💗','🩷','🌸','💝'];
+  for (let i = 0; i < 20; i++) {
     const el = document.createElement('span');
     el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
     el.style.cssText = `
       position: fixed;
-      left: ${cx}px;
-      top: ${cy}px;
-      font-size: ${1 + Math.random() * 2}rem;
-      pointer-events: none;
-      z-index: 251;
-      animation: bubbleParticleBurst ${1.5 + Math.random() * 2}s ease-out forwards;
-      --px: ${(Math.random() - 0.5) * 350}px;
-      --py: ${(Math.random() - 0.5) * 350}px;
-      --rot: ${(Math.random() - 0.5) * 720}deg;
+      left: ${window.innerWidth/2}px;
+      top: ${window.innerHeight/2}px;
+      font-size: ${1 + Math.random()*2}rem;
+      pointer-events:none;
+      z-index:253;
+      animation: chatParticleBurst ${1.5+Math.random()*2}s ease-out forwards;
+      --px: ${(Math.random()-0.5)*500}px;
+      --py: ${(Math.random()-0.5)*500}px;
+      --rot: ${(Math.random()-0.5)*720}deg;
     `;
-    container.appendChild(el);
+    chatParticles.appendChild(el);
     setTimeout(() => el.remove(), 3500);
   }
 }
 
-// Add particle burst keyframes dynamically
-const bubbleParticleStyle = document.createElement('style');
-bubbleParticleStyle.textContent = `
-  @keyframes bubbleParticleBurst {
-    0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
-    100% { transform: translate(var(--px), var(--py)) scale(0.2) rotate(var(--rot)); opacity: 0; }
+// Add particle keyframe
+const chatParticleStyle = document.createElement('style');
+chatParticleStyle.textContent = `
+  @keyframes chatParticleBurst {
+    0% { transform: translate(0,0) scale(1) rotate(0deg); opacity:1; }
+    100% { transform: translate(var(--px),var(--py)) scale(0.2) rotate(var(--rot)); opacity:0; }
   }
 `;
-document.head.appendChild(bubbleParticleStyle);
+document.head.appendChild(chatParticleStyle);
+
+// Button click → show first message
+chatPopupBtn.addEventListener('click', () => {
+  if (!chatActive) showNextChat();
+});
+
+// Click anywhere to dismiss
+chatOverlay.addEventListener('click', (e) => {
+  if (e.target === chatOverlay) {
+    dismissChat();
+  }
+});
+
+// After dismiss, auto-show next after 1.5s
+let chatNextTimeout = null;
+const origDismiss = dismissChat;
+dismissChat = function() {
+  clearTimeout(chatTimer);
+  clearTimeout(chatNextTimeout);
+  origDismiss();
+  chatNextTimeout = setTimeout(() => {
+    if (!chatActive) showNextChat();
+  }, 1500);
+};
 
 // ============================================================
 // 8. NAVIGATION
