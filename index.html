@@ -1263,13 +1263,6 @@ body {
       <canvas id="cameraCanvas"></canvas>
       <div class="camera-flash" id="cameraFlash"></div>
       <div class="camera-placeholder" id="cameraPlaceholder">📷</div>
-      <div class="gesture-status" id="gestureStatus">🖐️ 张开手掌打开爱心</div>
-      <div class="camera-guide" id="cameraGuide">
-        <span class="hand-icon">🖐️</span>
-        <span>对着镜头张开手掌</span>
-        <div class="guide-steps">保持 3 秒，爱心将为你打开 💖</div>
-        <div class="progress-bar"><div class="progress-fill" id="gestureProgress"></div></div>
-      </div>
     </div>
     <div class="camera-actions">
       <button id="cameraStartBtn" class="camera-btn start">打开摄像头</button>
@@ -2497,7 +2490,7 @@ async function renderRecordings() {
 }
 
 // ============================================================
-// 6. CAMERA MODULE + HAND GESTURE DETECTION
+// 6. CAMERA MODULE (拍照留恋 — no gesture)
 // ============================================================
 const cameraPreview = document.getElementById('cameraPreview');
 const cameraVideo = document.getElementById('cameraVideo');
@@ -2507,18 +2500,14 @@ const cameraPlaceholder = document.getElementById('cameraPlaceholder');
 const cameraStartBtn = document.getElementById('cameraStartBtn');
 const cameraCaptureBtn = document.getElementById('cameraCaptureBtn');
 const cameraStopBtn = document.getElementById('cameraStopBtn');
-const gestureStatus = document.getElementById('gestureStatus');
-const gestureHint = document.getElementById('gestureHint');
 
 let cameraStream = null;
-let gestureInterval = null;
-let openPalmFrames = 0;
-const GESTURE_THRESHOLD = 15; // frames needed to trigger
-let heartOpenedByGesture = false;
 
 // ============================================================
-// Heart split-open animation (for gesture)
+// Heart split-open animation (used by hero gesture & camera gesture)
 // ============================================================
+let heartOpenedByGesture = false;
+
 function openHeartWithGesture() {
   if (heartOpenedByGesture) return;
   heartOpenedByGesture = true;
@@ -2528,12 +2517,6 @@ function openHeartWithGesture() {
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
 
-  // Clone the heart SVG into left and right halves
-  const svgClone = heartEl.cloneNode(true);
-  svgClone.removeAttribute('id');
-
-  // Create clip-path version: left heart and right heart
-  // Simpler approach: create two colored heart emojis that split apart
   const leftHeart = document.createElement('div');
   leftHeart.className = 'heart-left';
   leftHeart.innerHTML = heartEl.outerHTML.replace('id="heartSVG"', '');
@@ -2550,30 +2533,20 @@ function openHeartWithGesture() {
   rightHeart.querySelector('svg').style.position = 'static';
   document.body.appendChild(rightHeart);
 
-  // Hide original heart
   heartEl.style.opacity = '0';
-  // Hide the heart particle canvas too
   const hpCanvas = document.getElementById('heartParticleCanvas');
   if (hpCanvas) hpCanvas.style.opacity = '0';
 
-  // Trigger split animation
   requestAnimationFrame(() => {
     leftHeart.classList.add('split-open');
     rightHeart.classList.add('split-open');
   });
 
-  // Burst particles
   spawnHeartBurst(cx, cy);
 
-  // Show message modal
-  setTimeout(() => {
-    messageModal.classList.add('active');
-  }, 400);
-
-  // Start music
+  setTimeout(() => { messageModal.classList.add('active'); }, 400);
   startMusic();
 
-  // Cleanup after animation
   setTimeout(() => {
     leftHeart.remove();
     rightHeart.remove();
@@ -2584,99 +2557,26 @@ function openHeartWithGesture() {
 }
 
 // ============================================================
-// Hand gesture detection
+// Hand gesture detection helpers
 // ============================================================
 function isOpenPalm(landmarks) {
-  // Check if all fingers are extended
-  // Fingertips: 4(thumb), 8(index), 12(middle), 16(ring), 20(pinky)
-  // MCP joints: 5(index), 9(middle), 13(ring), 17(pinky)
-  // Wrist: 0
   const wrist = landmarks[0];
   const tips = [4, 8, 12, 16, 20];
-  const mcps = [2, 5, 9, 13, 17]; // thumb IP, index MCP, middle MCP, ring MCP, pinky MCP
-
+  const mcps = [2, 5, 9, 13, 17];
   let extendedCount = 0;
   for (let i = 0; i < tips.length; i++) {
     const tip = landmarks[tips[i]];
     const mcp = landmarks[mcps[i]];
     const wristDist = Math.hypot(tip.x - wrist.x, tip.y - wrist.y, tip.z - wrist.z);
     const mcpDist = Math.hypot(mcp.x - wrist.x, mcp.y - wrist.y, mcp.z - wrist.z);
-    // Finger is extended if tip is significantly farther from wrist than MCP is
-    if (wristDist > mcpDist * 1.25) {
-      extendedCount++;
-    }
+    if (wristDist > mcpDist * 1.25) extendedCount++;
   }
-  return extendedCount >= 4; // At least 4 fingers extended
+  return extendedCount >= 4;
 }
 
-async function detectGesture() {
-  if (!window.isMediaPipeReady || !window.isMediaPipeReady()) return;
-  if (!cameraStream || cameraVideo.readyState < 2) return;
-
-  const handLandmarker = window.handLandmarker;
-  if (!handLandmarker) return;
-
-  try {
-    const result = handLandmarker.detectForVideo(cameraVideo, performance.now());
-    const gestureStatusEl = document.getElementById('gestureStatus');
-
-    if (result.landmarks && result.landmarks.length >= 1) {
-      // Check each hand for open palm
-      let openPalms = 0;
-      result.landmarks.forEach(lm => {
-        if (isOpenPalm(lm)) openPalms++;
-      });
-
-      const progressBar = document.getElementById('gestureProgress');
-      const guideEl = document.getElementById('cameraGuide');
-
-      if (openPalms >= 1) {
-        openPalmFrames++;
-        const pct = Math.min(100, Math.round((openPalmFrames / GESTURE_THRESHOLD) * 100));
-        if (progressBar) progressBar.style.width = pct + '%';
-
-        gestureStatusEl.textContent = '🖐️✨ 检测到手掌！保持住... (' + pct + '%)';
-        gestureStatusEl.classList.add('detected');
-        if (gestureHint) gestureHint.classList.add('active');
-        if (guideEl) {
-          guideEl.querySelector('.hand-icon').textContent = '✨';
-          guideEl.querySelector('.guide-steps').textContent = '继续坚持！爱心即将打开...';
-        }
-
-        if (openPalmFrames >= GESTURE_THRESHOLD) {
-          gestureStatusEl.textContent = '💖 爱心已打开！';
-          if (progressBar) progressBar.style.width = '100%';
-          if (guideEl) {
-            guideEl.querySelector('.hand-icon').textContent = '💖';
-            guideEl.querySelector('.guide-steps').textContent = '爱心已为你打开！';
-          }
-          openPalmFrames = 0;
-          openHeartWithGesture();
-        }
-      } else {
-        openPalmFrames = Math.max(0, openPalmFrames - 2);
-        const pct = Math.min(100, Math.round((openPalmFrames / GESTURE_THRESHOLD) * 100));
-        if (progressBar) progressBar.style.width = pct + '%';
-        gestureStatusEl.textContent = '🖐️ 张开手掌打开爱心';
-        gestureStatusEl.classList.remove('detected');
-        if (guideEl) {
-          guideEl.querySelector('.hand-icon').textContent = '🖐️';
-          guideEl.querySelector('.guide-steps').textContent = '保持 3 秒，爱心将为你打开 💖';
-        }
-      }
-    } else {
-      openPalmFrames = Math.max(0, openPalmFrames - 1);
-      const pct = Math.min(100, Math.round((openPalmFrames / GESTURE_THRESHOLD) * 100));
-      const pb = document.getElementById('gestureProgress');
-      if (pb) pb.style.width = pct + '%';
-      gestureStatusEl.textContent = '🖐️ 张开手掌打开爱心';
-      gestureStatusEl.classList.remove('detected');
-    }
-  } catch(e) {
-    // Silently ignore detection errors
-  }
-}
-
+// ============================================================
+// Camera photo functions
+// ============================================================
 async function startCamera() {
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -2689,19 +2589,6 @@ async function startCamera() {
     cameraStartBtn.style.display = 'none';
     cameraCaptureBtn.style.display = 'inline-block';
     cameraStopBtn.style.display = 'inline-block';
-    gestureStatus.style.display = 'block';
-    document.getElementById('cameraGuide').style.display = 'block';
-    document.getElementById('gestureProgress').style.width = '0%';
-    if (gestureHint) gestureHint.classList.add('active');
-
-    // Initialize MediaPipe for hand gesture detection
-    if (window.initMediaPipe) {
-      const ready = await window.initMediaPipe();
-      if (ready) {
-        openPalmFrames = 0;
-        gestureInterval = setInterval(detectGesture, 200); // 5fps
-      }
-    }
   } catch (err) {
     alert('无法打开摄像头，请检查浏览器权限设置。');
     console.error('Camera access error:', err);
@@ -2709,8 +2596,6 @@ async function startCamera() {
 }
 
 function stopCamera() {
-  if (gestureInterval) { clearInterval(gestureInterval); gestureInterval = null; }
-  openPalmFrames = 0;
   if (cameraStream) {
     cameraStream.getTracks().forEach(t => t.stop());
     cameraStream = null;
@@ -2721,38 +2606,25 @@ function stopCamera() {
   cameraStartBtn.style.display = 'inline-block';
   cameraCaptureBtn.style.display = 'none';
   cameraStopBtn.style.display = 'none';
-  gestureStatus.style.display = 'none';
-  gestureStatus.classList.remove('detected');
-  gestureStatus.textContent = '🖐️ 张开手掌打开爱心';
-  document.getElementById('cameraGuide').style.display = 'none';
-  document.getElementById('gestureProgress').style.width = '0%';
-  if (gestureHint) gestureHint.classList.remove('active');
 }
 
 function capturePhoto() {
   if (!cameraStream) return;
-
-  const video = cameraVideo;
-  const canvas = cameraCanvas;
+  const video = cameraVideo, canvas = cameraCanvas;
   canvas.width = video.videoWidth || 640;
   canvas.height = video.videoHeight || 480;
-
   const ctx = canvas.getContext('2d');
-  ctx.save();
-  ctx.scale(-1, 1);
+  ctx.save(); ctx.scale(-1, 1);
   ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
   ctx.restore();
-
   ctx.fillStyle = 'rgba(255, 107, 157, 0.08)';
   ctx.beginPath();
-  const hx = canvas.width / 2, hy = canvas.height / 2;
+  const hx = canvas.width/2, hy = canvas.height/2;
   const s = Math.min(canvas.width, canvas.height) * 0.3;
   drawHeartPath(ctx, hx, hy, s);
   ctx.fill();
-
   cameraFlash.classList.add('flash');
   setTimeout(() => cameraFlash.classList.remove('flash'), 150);
-
   const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
   savePhoto(dataUrl).then(() => renderGallery());
 }
@@ -2881,140 +2753,172 @@ gestureTrigger.addEventListener('click', () => {
 });
 
 // ============================================================
-// 7. CHAT POPUP MESSAGES (全屏弹出式)
+// 7. CHAT POPUP MESSAGES (抽奖式全屏弹出)
 // ============================================================
 const ALL_MESSAGES = [
-  // 想念
   { emoji: '💕', text: '我好想你，每一天都在想' },
   { emoji: '💌', text: '我们永远是彼此最重要的人' },
   { emoji: '🌙', text: '不管多远，你都在我心里' },
   { emoji: '💎', text: '谢谢你出现在我的生命里' },
-  // 夸奖
   { emoji: '✨', text: '你笑起来真好看，像春天的花一样' },
   { emoji: '🌟', text: '你是我见过最善良、最温暖的人' },
   { emoji: '👑', text: '你值得这世界所有的美好' },
   { emoji: '🌈', text: '认识你，是我这辈子最幸运的事' },
   { emoji: '🦋', text: '你的存在让这个世界变得更美好了' },
-  // 鼓励
-  { emoji: '💪', text: '加油！你是最棒的，没有什么能难倒你' },
+  { emoji: '💪', text: '加油！你是最棒的' },
   { emoji: '🔥', text: '无论遇到什么困难，你都能克服' },
   { emoji: '🎯', text: '相信自己，你已经做得很好了' },
-  { emoji: '🌻', text: '希望你每天都开心快乐，做最好的自己' },
-  // 暖心
+  { emoji: '🌻', text: '希望你每天都开心快乐' },
   { emoji: '🎂', text: '生日快乐，我最珍贵的宝藏' },
-  { emoji: '🤝', text: '我们的友谊永远不变，永远在一起' },
+  { emoji: '🤝', text: '我们的友谊永远不变' },
   { emoji: '💖', text: '有你在的世界，就是最好的世界' },
-  { emoji: '🏠', text: '不管走多远，我这里永远是你的港湾' },
+  { emoji: '🏠', text: '不管走多远，我这里永远是港湾' },
   { emoji: '🎁', text: '你是上天给我最好的礼物' },
 ];
 
 const chatOverlay = document.getElementById('chatOverlay');
-const chatCard = document.getElementById('chatCard');
 const chatText = document.getElementById('chatText');
 const chatEmoji = document.getElementById('chatEmoji');
 const chatParticles = document.getElementById('chatParticles');
 const chatPopupBtn = document.getElementById('chatPopupBtn');
 
-let chatIndex = -1;
 let chatTimer = null;
 let chatActive = false;
+let usedMsgs = [];
 
-function shuffleMessages() {
-  const arr = [...ALL_MESSAGES];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
+function getRandomMessage() {
+  if (usedMsgs.length >= ALL_MESSAGES.length) usedMsgs = [];
+  const available = ALL_MESSAGES.filter((_, i) => !usedMsgs.includes(i));
+  const idx = Math.floor(Math.random() * available.length);
+  const realIdx = ALL_MESSAGES.indexOf(available[idx]);
+  usedMsgs.push(realIdx);
+  return available[idx];
 }
 
-let shuffledMessages = shuffleMessages();
-
-function showNextChat() {
-  if (chatActive) return;
-
-  chatIndex++;
-  if (chatIndex >= shuffledMessages.length) {
-    shuffledMessages = shuffleMessages();
-    chatIndex = 0;
+function createSurroundBubbles() {
+  // Create 8 smaller bubbles around the screen
+  const bubbleMsgs = [];
+  const pool = ALL_MESSAGES.filter((_, i) => !usedMsgs.includes(i) || usedMsgs[usedMsgs.length-1] !== i);
+  for (let i = 0; i < 8; i++) {
+    const m = pool[Math.floor(Math.random() * pool.length)];
+    bubbleMsgs.push(m);
   }
 
-  const msg = shuffledMessages[chatIndex];
+  const positions = [
+    { top: '5%', left: '10%' }, { top: '8%', left: '50%' }, { top: '5%', left: '75%' },
+    { top: '40%', left: '2%' }, { top: '40%', left: '85%' },
+    { top: '75%', left: '8%' }, { top: '75%', left: '50%' }, { top: '75%', left: '78%' },
+  ];
+
+  bubbleMsgs.forEach((msg, i) => {
+    const el = document.createElement('div');
+    el.className = 'mini-chat-bubble';
+    el.textContent = msg.emoji + ' ' + msg.text;
+    el.style.cssText = `
+      position: fixed;
+      top: ${positions[i].top};
+      left: ${positions[i].left};
+      transform: translate(-50%, -50%) scale(0);
+      z-index: 253;
+      animation: miniBubbleIn 0.4s ${0.1 + i * 0.08}s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      pointer-events: none;
+    `;
+    document.body.appendChild(el);
+    // Remove after 3.5s
+    setTimeout(() => {
+      el.style.animation = 'miniBubbleOut 0.3s ease-out forwards';
+      setTimeout(() => el.remove(), 300);
+    }, 3000 + i * 50);
+  });
+}
+
+// Add bubble in/out keyframes
+const miniBubbleStyle = document.createElement('style');
+miniBubbleStyle.textContent = `
+  .mini-chat-bubble {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: #fff;
+    background: rgba(20,15,40,0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,107,157,0.3);
+    border-radius: 16px;
+    padding: 0.5rem 1rem;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 0 15px rgba(255,107,157,0.15);
+  }
+  @keyframes miniBubbleIn {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  }
+  @keyframes miniBubbleOut {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  }
+`;
+document.head.appendChild(miniBubbleStyle);
+
+function showChatPopup() {
+  if (chatActive) return;
+  chatActive = true;
+
+  const msg = getRandomMessage();
   chatEmoji.textContent = msg.emoji;
   chatText.textContent = msg.text;
   chatOverlay.classList.add('active');
-  chatActive = true;
 
-  // Spawn particles
-  spawnChatParticles();
+  // Spawn surrounding mini bubbles
+  createSurroundBubbles();
 
-  // Auto-dismiss after 4 seconds
-  chatTimer = setTimeout(() => {
-    dismissChat();
-  }, 4000);
-}
-
-function dismissChat() {
-  clearTimeout(chatTimer);
-  chatOverlay.classList.remove('active');
-  chatActive = false;
-}
-
-function spawnChatParticles() {
-  const emojis = ['💕','✨','💫','💖','🌟','💗','🩷','🌸','💝'];
-  for (let i = 0; i < 20; i++) {
+  // Spawn center particles
+  const emojis = ['💕','✨','💫','💖','🌟','💗','🌸'];
+  for (let i = 0; i < 15; i++) {
     const el = document.createElement('span');
     el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
     el.style.cssText = `
-      position: fixed;
-      left: ${window.innerWidth/2}px;
-      top: ${window.innerHeight/2}px;
-      font-size: ${1 + Math.random()*2}rem;
-      pointer-events:none;
-      z-index:253;
+      position:fixed; left:${window.innerWidth/2}px; top:${window.innerHeight/2}px;
+      font-size:${1+Math.random()*2}rem; pointer-events:none; z-index:254;
       animation: chatParticleBurst ${1.5+Math.random()*2}s ease-out forwards;
-      --px: ${(Math.random()-0.5)*500}px;
-      --py: ${(Math.random()-0.5)*500}px;
-      --rot: ${(Math.random()-0.5)*720}deg;
+      --px:${(Math.random()-0.5)*500}px; --py:${(Math.random()-0.5)*500}px;
+      --rot:${(Math.random()-0.5)*720}deg;
     `;
     chatParticles.appendChild(el);
     setTimeout(() => el.remove(), 3500);
   }
+
+  // Auto-close after 3 seconds
+  clearTimeout(chatTimer);
+  chatTimer = setTimeout(dismissChatPopup, 3000);
 }
 
-// Add particle keyframe
-const chatParticleStyle = document.createElement('style');
-chatParticleStyle.textContent = `
+function dismissChatPopup() {
+  clearTimeout(chatTimer);
+  chatOverlay.classList.remove('active');
+  chatActive = false;
+  // Remove mini bubbles
+  document.querySelectorAll('.mini-chat-bubble').forEach(el => {
+    el.style.animation = 'miniBubbleOut 0.3s ease-out forwards';
+    setTimeout(() => el.remove(), 300);
+  });
+}
+
+// Particle keyframe
+const cpStyle = document.createElement('style');
+cpStyle.textContent = `
   @keyframes chatParticleBurst {
     0% { transform: translate(0,0) scale(1) rotate(0deg); opacity:1; }
     100% { transform: translate(var(--px),var(--py)) scale(0.2) rotate(var(--rot)); opacity:0; }
   }
 `;
-document.head.appendChild(chatParticleStyle);
+document.head.appendChild(cpStyle);
 
-// Button click → show first message
-chatPopupBtn.addEventListener('click', () => {
-  if (!chatActive) showNextChat();
-});
-
-// Click anywhere to dismiss
+chatPopupBtn.addEventListener('click', showChatPopup);
 chatOverlay.addEventListener('click', (e) => {
-  if (e.target === chatOverlay) {
-    dismissChat();
-  }
+  if (e.target === chatOverlay) dismissChatPopup();
 });
-
-// After dismiss, auto-show next after 1.5s
-let chatNextTimeout = null;
-const origDismiss = dismissChat;
-dismissChat = function() {
-  clearTimeout(chatTimer);
-  clearTimeout(chatNextTimeout);
-  origDismiss();
-  chatNextTimeout = setTimeout(() => {
-    if (!chatActive) showNextChat();
-  }, 1500);
-};
 
 // ============================================================
 // 8. NAVIGATION
